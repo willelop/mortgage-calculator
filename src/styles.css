@@ -212,3 +212,45 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
 .amort-table .amort-neg { color: var(--accent2); }
 .amort-table .amort-pos { color: var(--accent); }
 .amort-table .amort-sonder { color: #4a6fa5; }
+
+/* Card head: title + actions on one row */
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.card-head h2 { margin: 0 0 10px; }
+.terms-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+.csv-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+.csv-actions button { font-size: 0.8rem; padding: 4px 10px; }
+.runs-bar .danger { color: #b00020; border-color: #b00020; }
+.runs-bar button[disabled] .danger { opacity: 0.5; }
+
+/* Print: report-style output — hide interactive chrome */
+@media print {
+  .col-params, .toolbar, .runs-bar, footer, .warning, .toast, .csv-actions, .terms-toggle {
+    display: none !important;
+  }
+  .grid { display: block; }
+  .card {
+    break-inside: avoid;
+    box-shadow: none;
+    border-color: #ccc;
+    page-break-inside: avoid;
+  }
+  .card-head h2 { margin-bottom: 0.4em; }
+  .amort-table-wrap { max-height: none; overflow: visible; }
+  body { font-size: 11pt; }
+  @page { margin: 12mm; }
+}

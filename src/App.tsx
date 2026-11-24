@@ -1,11 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ParamState, defaultState, switchOn } from './engine/params';
-import { runScenario, ScenarioResult } from './engine/simulate';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ParamState, defaultState, switchOn, num } from './engine/params';
+import { runScenario, ScenarioResult, loanAmountFor } from './engine/simulate';
 import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
 import { Results } from './ui/Results';
 import { Logo } from './ui/Logo';
+import { fmtEur } from './format';
 import {
   applyPreset, PRESETS, fromLocation, toShareUrl,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
@@ -21,6 +22,49 @@ export default function App(): JSX.Element {
   const [running, setRunning] = useState<'nominal' | 'mc' | null>(null);
   const [copied, setCopied] = useState(false);
   const [preset, setPreset] = useState('');
+  const [mcProgress, setMcProgress] = useState<number | null>(null);
+
+  // latest state for use inside long-lived worker callbacks
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const workerRef = useRef<Worker | null>(null);
+  const runIdRef = useRef(0);
+
+  const getWorker = useCallback((): Worker => {
+    if (workerRef.current) return workerRef.current;
+    const w = new Worker(new URL('./mc-worker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent) => {
+      const msg = e.data as { type: string; id: number; fraction?: number; result?: McResult; error?: string };
+      if (msg.type === 'progress') {
+        if (msg.id === runIdRef.current) setMcProgress(msg.fraction ?? 0);
+        return;
+      }
+      if (msg.type === 'done') {
+        if (msg.id === runIdRef.current) {
+          setMc(msg.result ?? null);
+          setNominal(runScenario(stateRef.current));
+          setSens(sensitivityAnalysis(stateRef.current));
+        }
+        setMcProgress(null);
+        setRunning(null);
+        return;
+      }
+      if (msg.type === 'error') {
+        if (msg.error && msg.error !== 'cancelled') {
+          window.alert(`Monte Carlo failed: ${msg.error}`);
+        }
+        setMcProgress(null);
+        setRunning(null);
+      }
+    };
+    w.onerror = () => {
+      setMcProgress(null);
+      setRunning(null);
+    };
+    workerRef.current = w;
+    return w;
+  }, []);
 
   useEffect(() => {
     // Run the nominal scenario once on load so the user sees something immediately.
@@ -30,6 +74,14 @@ export default function App(): JSX.Element {
   }, []);
 
   const freedCashOn = switchOn(state, 'freed_cash_invested');
+
+  const sonderWarning = useMemo(() => {
+    const loan = loanAmountFor(state);
+    if (loan <= 0) return null;
+    const cap = 0.05 * loan;
+    const extra = (loan * num(state, 'sondertilgung_pct')) / 100 + num(state, 'sondertilgung_eur');
+    return extra > cap * 1.005 ? { extra, cap } : null;
+  }, [state]);
 
   const runNominal = useCallback(() => {
     setRunning('nominal');
@@ -41,18 +93,34 @@ export default function App(): JSX.Element {
   }, [state]);
 
   const runMc = useCallback(() => {
+    // Sync fallback (no Worker support): run inline as before.
+    if (typeof Worker === 'undefined') {
+      setRunning('mc');
+      setTimeout(() => {
+        try {
+          const res = runMonteCarlo(state, { runs: mcRuns, seed });
+          setMc(res);
+          setNominal(runScenario(state));
+          setSens(sensitivityAnalysis(state));
+        } finally {
+          setRunning(null);
+        }
+      }, 10);
+      return;
+    }
     setRunning('mc');
-    setTimeout(() => {
-      try {
-        const res = runMonteCarlo(state, { runs: mcRuns, seed });
-        setMc(res);
-        setNominal(runScenario(state));
-        setSens(sensitivityAnalysis(state));
-      } finally {
-        setRunning(null);
-      }
-    }, 10);
-  }, [state, mcRuns, seed]);
+    setMcProgress(0);
+    const id = ++runIdRef.current;
+    getWorker().postMessage({ type: 'run', id, state, runs: mcRuns, seed });
+  }, [state, mcRuns, seed, getWorker]);
+
+  const cancelMc = useCallback(() => {
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    runIdRef.current++;
+    setRunning(null);
+    setMcProgress(null);
+  }, []);
 
   const enrolledCount = useMemo(
     () => Object.values(state.mc).filter((m) => m.enabled).length,
@@ -144,6 +212,14 @@ export default function App(): JSX.Element {
         </div>
       )}
 
+      {sonderWarning && (
+        <div className="warning">
+          ⚠️ <strong>Sondertilgung above the usual contract cap.</strong> You set{' '}
+          {fmtEur(sonderWarning.extra)}/year, but most contracts allow at most 5 % of the original
+          loan ≈ {fmtEur(sonderWarning.cap)}/year. Runs above the cap are unlikely to be granted.
+        </div>
+      )}
+
       <div className="runs-bar">
         <button className="primary" onClick={runNominal} disabled={running !== null}>
           {running === 'nominal' ? 'Running…' : '1 ▶ Run nominal scenario'}
@@ -167,9 +243,18 @@ export default function App(): JSX.Element {
           />
         </label>
         <button className="primary" onClick={runMc} disabled={running !== null}>
-          {running === 'mc' ? `Simulating…` : `2 ▶ Run Monte Carlo (${mcRuns})`}
+          {running === 'mc'
+            ? `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`
+            : `2 ▶ Run Monte Carlo (${mcRuns})`}
         </button>
+        {running === 'mc' && (
+          <button className="danger" onClick={cancelMc}>
+            ✕ Cancel
+          </button>
+        )}
         <span className="hint">{enrolledCount} parameter(s) enrolled</span>
+        <span className="gap" />
+        <button onClick={() => window.print()}>🖨 Print / PDF</button>
       </div>
 
       <main className="grid">
@@ -177,7 +262,7 @@ export default function App(): JSX.Element {
           <ParamForm state={state} onChange={setState} />
         </div>
         <div className="col-results">
-          <Results nominal={nominal} mc={mc} sens={sens} />
+          <Results nominal={nominal} mc={mc} sens={sens} inflationPct={num(state, 'inflation')} />
           <section className="card assumptions">
             <h2>Model assumptions & limits</h2>
             <ul>

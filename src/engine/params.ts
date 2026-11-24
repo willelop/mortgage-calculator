@@ -85,6 +85,8 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'grundsteuer_annual', label: 'Grundsteuer (property tax)', group: 'purchase', kind: 'eur', default: 700, min: 0, max: 5000, step: 50, mcable: true, help: 'EUR/year, indexed to inflation.' },
   { key: 'building_insurance_annual', label: 'Building insurance (Wohngebäudevers.)', group: 'purchase', kind: 'eur', default: 350, min: 0, max: 3000, step: 25, mcable: true, help: 'EUR/year, indexed to inflation.' },
   { key: 'maintenance_rate', label: 'Maintenance reserve', group: 'purchase', kind: 'pct', default: 1.0, min: 0, max: 3, step: 0.1, mcable: true, help: '% of purchase price per year, indexed to inflation.' },
+  { key: 'maintenance_lump_year', label: 'Lump-sum maintenance — year', group: 'purchase', kind: 'count', default: 25, min: 1, max: 50, step: 1, toggleable: false, help: 'Year in which the one-off maintenance event below is charged (e.g. new roof ~year 25, heating ~year 20).' },
+  { key: 'maintenance_lump_amount', label: 'Lump-sum maintenance event', group: 'purchase', kind: 'eur', default: 0, min: 0, max: 200_000, step: 5000, mcable: true, defaultOn: false, help: 'One-off spend in the year above (roof, heating, façade…). Paid from the buyer portfolio; on top of the yearly % reserve.' },
   { key: 'hausgeld_annual', label: 'Hausgeld / WEG (condo fees)', group: 'purchase', kind: 'eur', default: 0, min: 0, max: 24_000, step: 100, mcable: true, help: 'EUR/year if buying a condo; set 0 for a house.' },
 
   // ---------- Mortgage ----------
@@ -96,6 +98,7 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'loan_term_years', label: 'Full loan term', group: 'mortgage', kind: 'count', default: 30, min: 5, max: 40, step: 1, toggleable: false, help: 'Total life of the loan; follow-up payment amortizes over the remaining term.' },
   { key: 'sondertilgung_pct', label: 'Sondertilgung — % of loan / year', group: 'mortgage', kind: 'pct', default: 0, min: 0, max: 10, step: 0.5, mcable: true, help: 'Extra repayment as % of the *original* loan per year.' },
   { key: 'sondertilgung_eur', label: 'Sondertilgung — fixed amount / year', group: 'mortgage', kind: 'eur', default: 0, min: 0, max: 100_000, step: 1000, mcable: true, help: 'Extra repayment in EUR per year.' },
+  { key: 'ltv_rate_surcharge', label: 'LTV rate surcharge (Beleihungsauslauf)', group: 'mortgage', kind: 'switch', default: 1, toggleable: false, help: 'Bank pricing typically penalizes high loan-to-value: +0.25 % points above 60 % LTV, +0.6 % points above 80 % — applied to both fixed and follow-up rate. Switch on for realistic pricing when your equity is thin.' },
 
   // ---------- Rent ----------
   { key: 'rent_cold', label: 'Cold rent (Kaltmiete)', group: 'rent', kind: 'mrate', default: 1650, min: 200, max: 15_000, step: 50, mcable: true, help: 'Monthly, for a comparable property.' },
@@ -150,6 +153,8 @@ export const ICON: Record<string, string> = {
   grundsteuer_annual: '🧾',
   building_insurance_annual: '🛡️',
   maintenance_rate: '🔧',
+  maintenance_lump_year: '📅',
+  maintenance_lump_amount: '🧱',
   hausgeld_annual: '🏢',
   // mortgage
   equity: '💰',
@@ -160,6 +165,7 @@ export const ICON: Record<string, string> = {
   loan_term_years: '🗓️',
   sondertilgung_pct: '➕',
   sondertilgung_eur: '💶',
+  ltv_rate_surcharge: '🏦',
   vol_property: '〰️',
   // rent
   rent_cold: '🔑',

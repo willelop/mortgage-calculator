@@ -92,6 +92,15 @@ export interface McOptions {
   seed: number;
   /** progress callback (fraction 0..1) */
   onProgress?: (fraction: number) => void;
+  /** polled every chunk; when it returns true the run aborts. */
+  shouldCancel?: () => boolean;
+}
+
+export class McCancelled extends Error {
+  constructor() {
+    super('Monte Carlo cancelled');
+    this.name = 'McCancelled';
+  }
 }
 
 export interface PercentileBands {
@@ -138,6 +147,7 @@ export function runMonteCarlo(state: ParamState, opts: McOptions): McResult {
   const breakevenYears: number[] = [];
 
   for (let run = 0; run < N; run++) {
+    if (opts.shouldCancel?.()) throw new McCancelled();
     // 1) draw enrolled deterministic parameters (factor-correlated or independent)
     const zs0 = gaussian(rand); // stock shock anchor for this run's param draws
     const zi0 = rhoSI * zs0 + gaussian(rand) * Math.sqrt(1 - rhoSI * rhoSI);

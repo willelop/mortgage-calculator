@@ -5,11 +5,13 @@ import { McResult } from '../engine/monte-carlo';
 import { SensitivityResult } from '../engine/sensitivity';
 import { fmtEur, fmtSignedEur, fmtPct } from '../format';
 import { Plot } from './Plot';
+import { downloadCsv } from './csv';
 
 interface Props {
   nominal: ScenarioResult | null;
   mc: McResult | null;
   sens: SensitivityResult | null;
+  inflationPct: number;
 }
 
 const COLORS = {
@@ -17,38 +19,67 @@ const COLORS = {
   rent: '#c05621',
 };
 
-export function Results({ nominal, mc, sens }: Props): JSX.Element | null {
+export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element | null {
+  const [realTerms, setRealTerms] = React.useState(false);
   if (!nominal) return null;
   const H = nominal.horizon;
+  const inf = inflationPct / 100;
+
+  const termsNote = realTerms ? `real terms (today's €, ${fmtPct(inf)} p.a.)` : 'nominal terms';
+
+  /** deflate a value at year index i when real terms are selected */
+  const deflate = React.useCallback(
+    (v: number, i: number) => (realTerms ? v / Math.pow(1 + inf, i) : v),
+    [realTerms, inf],
+  );
+
+  const nwBuyShown = nominal.nwBuy.map(deflate);
+  const nwRentShown = nominal.nwRent.map(deflate);
 
   return (
     <div className="results">
       <section className="card">
-        <h2>Nominal scenario — net worth over time</h2>
+        <div className="card-head">
+          <h2>Nominal scenario — net worth ({termsNote})</h2>
+          <label className="terms-toggle" title="Divide all amounts by inflation since today">
+            <input
+              type="checkbox"
+              checked={realTerms}
+              onChange={(e) => setRealTerms(e.target.checked)}
+            />
+            show in real terms (today's €)
+          </label>
+        </div>
         <div className="keynumbers">
-          <Stat label="Property + investments (buy)" value={fmtEur(nominal.nwBuy[nominal.nwBuy.length - 1])} />
-          <Stat label="Portfolio + kaution (rent)" value={fmtEur(nominal.nwRent[nominal.nwRent.length - 1])} />
+          <Stat label={`Property + investments (buy, ${termsNote})`} value={fmtEur(nominal.nwBuy[nominal.nwBuy.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
+          <Stat label={`Portfolio + kaution (rent, ${termsNote})`} value={fmtEur(nominal.nwRent[nominal.nwRent.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
           <Stat
-            label="Difference (buy − rent)"
-            value={fmtSignedEur(nominal.terminalDiff)}
+            label={`Difference (buy − rent, ${termsNote})`}
+            value={fmtSignedEur(nominal.terminalDiff / Math.pow(1 + inf, realTerms ? H : 0))}
             highlight={nominal.terminalDiff >= 0 ? 'good' : 'bad'}
           />
           <Stat label="Break-even year (buy ≥ rent)" value={nominal.breakEvenYear ? `year ${nominal.breakEvenYear}` : 'not within horizon'} />
           <Stat label="Total mortgage interest" value={fmtEur(nominal.totalInterest)} />
+          {nominal.loanAmount > 0 && (
+            <Stat
+              label={`Restschuld after fixed period (year ${nominal.fixationYear})`}
+              value={fmtEur(nominal.restschuldAtFixation)}
+            />
+          )}
           <Stat label="Transaction costs" value={fmtEur(nominal.transactionCosts)} />
         </div>
         <Plot
           data={[
             {
               x: nominal.years,
-              y: nominal.nwBuy,
+              y: nwBuyShown,
               name: 'Buy',
               mode: 'lines',
               line: { color: COLORS.buy, width: 3 },
             },
             {
               x: nominal.years,
-              y: nominal.nwRent,
+              y: nwRentShown,
               name: 'Rent',
               mode: 'lines',
               line: { color: COLORS.rent, width: 3 },
@@ -57,14 +88,14 @@ export function Results({ nominal, mc, sens }: Props): JSX.Element | null {
           layout={{
             margin: { l: 70, r: 20, t: 10, b: 50 },
             xaxis: { title: 'Year' },
-            yaxis: { title: 'Net worth (€)', tickformat: ',.0f' },
+            yaxis: { title: `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
             legend: { orientation: 'h' },
             hovermode: 'x',
           }}
         />
       </section>
 
-      {nominal.loanAmount > 0 && <AmortizationSection amort={nominal.amortization} />}
+      {nominal.loanAmount > 0 && <AmortizationSection amort={nominal.amortization} nominal={nominal} />}
 
       <section className="card">
         <h2>Cumulative cost of staying</h2>
@@ -98,9 +129,7 @@ export function Results({ nominal, mc, sens }: Props): JSX.Element | null {
         />
       </section>
 
-      {mc && (
-        <MonteCarloResults mc={mc} />
-      )}
+      {mc && <MonteCarloResults mc={mc} deflate={deflate} realTerms={realTerms} inflationPct={inflationPct} />}
 
       {sens && sens.rows.length > 0 && (
         <section className="card">
@@ -144,20 +173,32 @@ export function Results({ nominal, mc, sens }: Props): JSX.Element | null {
   );
 }
 
-function MonteCarloResults({ mc }: { mc: McResult }): JSX.Element {
+function MonteCarloResults({
+  mc,
+  deflate,
+  realTerms,
+  inflationPct,
+}: {
+  mc: McResult;
+  deflate: (v: number, i: number) => number;
+  realTerms: boolean;
+  inflationPct: number;
+}): JSX.Element {
   const years = mc.years;
+  const H = years.length - 1;
+  const termsNote = realTerms ? `real terms (today's €, ${fmtPct(inflationPct / 100)} p.a.)` : 'nominal terms';
   return (
     <>
       <section className="card">
-        <h2>Monte Carlo — {mc.runs.toLocaleString('de-DE')} simulated futures</h2>
+        <h2>Monte Carlo — {mc.runs.toLocaleString('de-DE')} simulated futures ({termsNote})</h2>
         <div className="keynumbers">
           <Stat label="Property: buy ends richer" value={fmtPct(mc.probBuyBeats)} highlight={mc.probBuyBeats >= 0.5 ? 'good' : 'bad'} />
           <Stat label="Buy overtakes rent within horizon" value={fmtPct(mc.probBreakeven)} />
           <Stat label="Median break-even year" value={mc.medianBreakEven !== null ? `year ${mc.medianBreakEven}` : '—'} />
-          <Stat label="Median terminal diff (buy − rent)" value={fmtSignedEur(mc.diffBands.p50[years.length - 1])} />
-          <Stat label="10th–90th pctl terminal diff" value={`${fmtEur(mc.diffBands.p10[years.length - 1])} … ${fmtEur(mc.diffBands.p90[years.length - 1])}`} />
+          <Stat label="Median terminal diff (buy − rent)" value={fmtSignedEur(deflate(mc.diffBands.p50[years.length - 1], H))} />
+          <Stat label="10th–90th pctl terminal diff" value={`${fmtEur(deflate(mc.diffBands.p10[years.length - 1], H))} … ${fmtEur(deflate(mc.diffBands.p90[years.length - 1], H))}`} />
         </div>
-        <FanChart mc={mc} />
+        <FanChart mc={mc} deflate={deflate} realTerms={realTerms} />
       </section>
 
       <section className="card">
@@ -165,7 +206,7 @@ function MonteCarloResults({ mc }: { mc: McResult }): JSX.Element {
         <Plot
           data={[
             {
-              x: mc.terminalDiff,
+              x: mc.terminalDiff.map((v) => deflate(v, H)),
               type: 'histogram',
               nbinsx: 60,
               marker: { color: '#4a6fa5' },
@@ -184,12 +225,21 @@ function MonteCarloResults({ mc }: { mc: McResult }): JSX.Element {
   );
 }
 
-function FanChart({ mc }: { mc: McResult }): JSX.Element {
+function FanChart({
+  mc,
+  deflate,
+  realTerms,
+}: {
+  mc: McResult;
+  deflate: (v: number, i: number) => number;
+  realTerms: boolean;
+}): JSX.Element {
   const years = mc.years;
+  const def = (arr: number[]) => arr.map(deflate);
 
   const bandFill = (upper: number[], lower: number[], name: string, color: string) => ({
     x: years,
-    y: upper,
+    y: upper.map(deflate),
     name,
     type: 'scatter',
     mode: 'lines',
@@ -201,7 +251,7 @@ function FanChart({ mc }: { mc: McResult }): JSX.Element {
   });
   const bandStart = (lower: number[], name: string, color: string) => ({
     x: years,
-    y: lower,
+    y: lower.map(deflate),
     name,
     type: 'scatter',
     mode: 'lines',
@@ -229,7 +279,7 @@ function FanChart({ mc }: { mc: McResult }): JSX.Element {
         // medians on top
         {
           x: years,
-          y: mc.buyBands.p50,
+          y: def(mc.buyBands.p50),
           name: 'Buy (median)',
           type: 'scatter',
           mode: 'lines',
@@ -237,7 +287,7 @@ function FanChart({ mc }: { mc: McResult }): JSX.Element {
         },
         {
           x: years,
-          y: mc.rentBands.p50,
+          y: def(mc.rentBands.p50),
           name: 'Rent (median)',
           type: 'scatter',
           mode: 'lines',
@@ -247,7 +297,7 @@ function FanChart({ mc }: { mc: McResult }): JSX.Element {
       layout={{
         margin: { l: 70, r: 20, t: 10, b: 50 },
         xaxis: { title: 'Year' },
-        yaxis: { title: 'Net worth (€)', tickformat: ',.0f' },
+        yaxis: { title: `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
         legend: { orientation: 'h' },
         hovermode: 'x',
       }}
@@ -264,18 +314,46 @@ const AMORT_COLORS = {
 /** Yearly amortization: % of each year's payment going to interest vs principal,
  *  plus the full yearly table (payments, interest, regular amortization,
  *  Sondertilgung, remaining balance). Rows stop when the loan is repaid. */
-function AmortizationSection({ amort }: { amort: AmortYear[] }): JSX.Element {
+function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: ScenarioResult }): JSX.Element {
   const rows = React.useMemo(() => {
     const active = amort.filter((r) => r.payment > 0.005 || r.balanceEnd > 0.005);
     return active.length > 0 ? active : amort;
   }, [amort]);
+
+  const exportAmortCsv = () =>
+    downloadCsv(
+      'amortization.csv',
+      ['Year', 'Payment EUR', 'Interest EUR', 'Amortization EUR', 'Sondertilgung EUR', 'Balance year-end EUR'],
+      rows.map((r) => [r.year, r.payment.toFixed(2), r.interest.toFixed(2), r.principal.toFixed(2), r.sondertilgung.toFixed(2), r.balanceEnd.toFixed(2)]),
+    );
+
+  const exportAllCsv = () =>
+    downloadCsv(
+      'buy-vs-rent-yearly.csv',
+      ['Year', 'Net worth buy EUR', 'Net worth rent EUR', 'Property value EUR', 'Loan balance EUR', 'Buy cumulative cost EUR', 'Rent cumulative cost EUR'],
+      nominal.years.map((y, i) => [
+        y,
+        nominal.nwBuy[i].toFixed(2),
+        nominal.nwRent[i].toFixed(2),
+        nominal.propertyValue[i].toFixed(2),
+        nominal.loanBalance[i].toFixed(2),
+        nominal.buyCumCost[i].toFixed(2),
+        nominal.rentCumCost[i].toFixed(2),
+      ]),
+    );
 
   const pct = (v: number, total: number) => (total > 0 ? (v / total) * 100 : 0);
   const x = rows.map((r) => r.year);
 
   return (
     <section className="card">
-      <h2>Amortization — interest vs principal</h2>
+      <div className="card-head">
+        <h2>Amortization — interest vs principal</h2>
+        <div className="csv-actions">
+          <button onClick={exportAmortCsv}>⬇ CSV: amortization</button>
+          <button onClick={exportAllCsv}>⬇ CSV: all yearly data</button>
+        </div>
+      </div>
       <p className="muted">
         Share of each year's mortgage payment that goes to interest vs. amortization
         (regular annuity repayment and Sondertilgung). Early on the payment is mostly

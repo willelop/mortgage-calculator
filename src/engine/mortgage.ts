@@ -112,6 +112,17 @@ export function germanAnnuityPayment(loan: number, ratePct: number, tilgungPct: 
   return loan * (ratePct / 100 / 12) + (loan * tilgungPct) / 100 / 12;
 }
 
+/**
+ * Rate surcharge (percentage points) for high loan-to-value, following typical
+ * German bank pricing (Beleihungsauslauf):
+ *   ≤ 60 % → best rate;  60–80 % → +0.25 pp;  > 80 % → +0.6 pp
+ */
+export function ltvSurchargePct(ltv: number): number {
+  if (ltv > 0.8) return 0.6;
+  if (ltv > 0.6) return 0.25;
+  return 0;
+}
+
 export interface AmortYear {
   /** calendar year index (1-based) */
   year: number;

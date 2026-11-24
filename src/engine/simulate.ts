@@ -20,7 +20,7 @@
  */
 
 import { ParamState, num, switchOn } from './params';
-import { mortgageSchedule, yearlyAmortization, AmortYear } from './mortgage';
+import { mortgageSchedule, yearlyAmortization, AmortYear, ltvSurchargePct } from './mortgage';
 import {
   Portfolio, TaxParams, newPortfolio, growMonth, deposit, withdrawGross,
   resetYearAllowance, payableTax,
@@ -48,6 +48,14 @@ export interface ScenarioResult {
   rentCumCost: number[];
   transactionCosts: number;
   loanAmount: number;
+  /** loan-to-price ratio (Beleihungsauslauf ≈ loan / purchase price) */
+  ltv: number;
+  /** rate surcharge applied (percentage points on fixed + follow-up rate) */
+  ltvSurcharge: number;
+  /** outstanding balance at the end of the Zinsbindung (or horizon if shorter) */
+  restschuldAtFixation: number;
+  /** year index of the fixed-rate period end used for restschuldAtFixation */
+  fixationYear: number;
   totalInterest: number;
   /** yearly amortization rows (payment split into interest / principal / Sondertilgung) */
   amortization: AmortYear[];
@@ -55,6 +63,20 @@ export interface ScenarioResult {
   breakEvenYear: number | null; // first year (label) with nwBuy >= nwRent
   liquidationTaxBuy: number;
   liquidationTaxRent: number;
+}
+
+/** One-off purchase transaction costs (Grunderwerbsteuer, Notar, Grundbuch, Makler, renovation). */
+export function transactionCostsFor(state: ParamState): number {
+  const price = num(state, 'property_price');
+  const rate =
+    num(state, 'grunderwerbsteuer_rate') + num(state, 'notary_rate') +
+    num(state, 'grundbuch_rate') + num(state, 'makler_rate');
+  return (price * rate) / 100 + num(state, 'renovation_budget');
+}
+
+/** Loan needed for the purchase (price + transaction costs − equity). */
+export function loanAmountFor(state: ParamState): number {
+  return Math.max(0, num(state, 'property_price') + transactionCostsFor(state) - num(state, 'equity'));
 }
 
 export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioResult {
@@ -67,24 +89,30 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
 
   // --- Purchase side -------------------------------------------------------
   const price = v('property_price');
-  const transactionRate =
-    v('grunderwerbsteuer_rate') + v('notary_rate') + v('grundbuch_rate') + v('makler_rate');
-  const transactionCosts = (price * transactionRate) / 100 + v('renovation_budget');
+  const transactionCosts = transactionCostsFor(state);
   const equity = v('equity');
   const loanAmount = Math.max(0, price + transactionCosts - equity);
   const residualEquity = Math.max(0, equity - price - transactionCosts);
 
+  // LTV-based rate surcharge (Beleihungsauslauf pricing)
+  const ltv = loanAmount / Math.max(1, price);
+  const ltvSurcharge = sw('ltv_rate_surcharge') ? ltvSurchargePct(ltv) : 0;
+
   const mortgage = mortgageSchedule({
     loan: loanAmount,
-    fixedRatePct: v('fixed_rate'),
+    fixedRatePct: v('fixed_rate') + ltvSurcharge,
     fixedYears: Math.round(v('fixed_years')),
-    followupRatePct: v('followup_rate'),
+    followupRatePct: v('followup_rate') + ltvSurcharge,
     tilgungPct: v('initial_tilgung'),
     termYears: Math.round(v('loan_term_years')),
     sondertilgungPct: v('sondertilgung_pct'),
     sondertilgungEur: v('sondertilgung_eur'),
     months,
   });
+
+  const fixedMonths = Math.max(0, Math.round(v('fixed_years')) * 12);
+  const fixationYear = Math.min(Math.round(v('fixed_years')), H);
+  const restschuldAtFixation = mortgage.balance[Math.min(fixedMonths, months)];
 
   // --- Portfolio setup -----------------------------------------------------
   const taxP: TaxParams = {
@@ -184,6 +212,15 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
           (num(state, 'maintenance_rate') / 100) * price * costIdx) / 12;
       const kaution = 3 * rentColdY;
 
+      // lump-sum maintenance event (roof, heating…) — paid by the owner
+      const lumpYear = Math.round(num(state, 'maintenance_lump_year'));
+      const lumpAmount = num(state, 'maintenance_lump_amount');
+      const lumpNow = lumpAmount > 0 && y + 1 === lumpYear;
+      if (lumpNow) {
+        cumBuy += lumpAmount;
+        flow(buyPortfolio, -lumpAmount);
+      }
+
       // stash per-year values for the 12 months of this year (closure vars)
       yctx.rentCostM = rentColdY + nebenkostenY;
       yctx.recurringM = recurringMonthly;
@@ -257,6 +294,10 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     rentCumCost,
     transactionCosts,
     loanAmount,
+    ltv,
+    ltvSurcharge,
+    restschuldAtFixation,
+    fixationYear,
     totalInterest: mortgage.totalInterest,
     amortization: yearlyAmortization(mortgage, H),
     terminalDiff: nwBuy[last] - nwRent[last],
