@@ -67,6 +67,12 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
               value={fmtEur(nominal.restschuldAtFixation)}
             />
           )}
+          {nominal.loanAmount > 0 && (
+            <Stat
+              label={nominal.paymentMode ? 'Implied Anfangstilgung (from payment)' : 'Anfangstilgung'}
+              value={` ${fmtPct(nominal.effectiveTilgungPct / 100)} · ${fmtEur(nominal.effectiveMonthlyPayment)}/mo`}
+            />
+          )}
           <Stat label="Transaction costs" value={fmtEur(nominal.transactionCosts)} />
         </div>
         <Plot

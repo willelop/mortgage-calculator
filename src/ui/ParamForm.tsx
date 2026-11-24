@@ -38,7 +38,9 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
 }
 
 function GroupCard({ group, state, set }: { group: Group; state: ParamState; set: Setter }): JSX.Element | null {
-  const defs = PARAM_DEFS.filter((d) => d.group === group);
+  const defs = PARAM_DEFS.filter(
+    (d) => d.group === group && (!d.visibleWhen || d.visibleWhen(state.values)),
+  );
 
   return (
     <section className="card">
@@ -72,7 +74,7 @@ function ParamBox({
   ].join(' ');
 
   return (
-    <div className={cls} title={def.help ?? ''}>
+    <div className={cls}>
       <div className="param-main">
         <div className="param-label">
           {toggleable && (
@@ -86,6 +88,7 @@ function ParamBox({
           )}
           <span className="icon" aria-hidden>{iconOf(def.key)}</span>
           <span className="text">{def.label}</span>
+          {def.help && <HelpTip text={def.help} />}
         </div>
         <div className="param-input">
           {def.kind === 'switch' ? (
@@ -97,6 +100,17 @@ function ParamBox({
               />
               <span className="unit">{state.values[def.key] !== 0 ? 'on' : 'off'}</span>
             </label>
+          ) : def.kind === 'select' ? (
+            <select
+              value={state.values[def.key]}
+              onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
+              aria-label={def.label}
+              title={def.help}
+            >
+              {(def.options ?? []).map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           ) : (
             <>
               <input
@@ -175,4 +189,14 @@ function unitOf(kind: string): string {
     default:
       return '';
   }
+}
+
+/** "?" mark with a hover/focus tooltip explaining the parameter. */
+function HelpTip({ text }: { text: string }): JSX.Element {
+  return (
+    <span className="help-tip" tabIndex={0} role="note" aria-label={text}>
+      <span className="help-mark" aria-hidden>?</span>
+      <span className="help-tooltip">{text}</span>
+    </span>
+  );
 }

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ParamState, defaultState, switchOn, num } from './engine/params';
 import { runScenario, ScenarioResult, loanAmountFor } from './engine/simulate';
+import { ltvSurchargePct } from './engine/mortgage';
 import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
@@ -114,6 +115,21 @@ export default function App(): JSX.Element {
     const cap = 0.05 * loan;
     const extra = (loan * num(state, 'sondertilgung_pct')) / 100 + num(state, 'sondertilgung_eur');
     return extra > cap * 1.005 ? { extra, cap } : null;
+  }, [state]);
+
+  // payment-mode guard: desired payment must exceed the initial interest
+  const paymentWarning = useMemo(() => {
+    if (Math.round(num(state, 'tilgung_mode')) !== 1) return null;
+    const loan = loanAmountFor(state);
+    if (loan <= 0) return null;
+    const price = num(state, 'property_price');
+    const ltv = loan / Math.max(1, price);
+    const rate = num(state, 'fixed_rate') + (switchOn(state, 'ltv_rate_surcharge') ? ltvSurchargePct(ltv) : 0);
+    const interestOnly = (loan * rate) / 100 / 12;
+    const mp = num(state, 'monthly_payment');
+    return mp <= interestOnly * 1.0005
+      ? { interestOnly, mp }
+      : null;
   }, [state]);
 
   const runNominal = useCallback(() => {
@@ -249,6 +265,15 @@ export default function App(): JSX.Element {
           ⚠️ <strong>Sondertilgung above the usual contract cap.</strong> You set{' '}
           {fmtEur(sonderWarning.extra)}/year, but most contracts allow at most 5 % of the original
           loan ≈ {fmtEur(sonderWarning.cap)}/year. Runs above the cap are unlikely to be granted.
+        </div>
+      )}
+
+      {paymentWarning && (
+        <div className="warning">
+          ⚠️ <strong>The monthly payment does not cover the initial interest.</strong> At your
+          current loan the interest alone is ≈ {fmtEur(paymentWarning.interestOnly)}/month, but you
+          set {fmtEur(paymentWarning.mp)}/month — the loan would never amortize (and the bank
+          wouldn't grant it). Raise the payment or the equity.
         </div>
       )}
 

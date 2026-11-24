@@ -88,6 +88,47 @@ describe('scenario realism features', () => {
   });
 });
 
+describe('repayment mode — Anfangstilgung vs desired monthly payment', () => {
+  const state = defaultState();
+  const loan = loanAmountFor(state);
+  const surcharge = state.values['ltv_rate_surcharge'] ? ltvSurchargePct(loan / state.values['property_price']) : 0;
+  const ratePct = state.values['fixed_rate'] + surcharge;
+  // monthly payment equivalent to 2 % Anfangstilgung
+  const mp2 = (loan * ratePct) / 100 / 12 + (loan * 2) / 100 / 12;
+
+  it('payment mode with the equivalent payment reproduces the tilgung-mode schedule', () => {
+    const viaTilgung = runScenario(state);
+    const viaPayment = runScenario({
+      ...state,
+      values: { ...state.values, tilgung_mode: 1, monthly_payment: mp2 },
+    });
+    expect(viaPayment.paymentMode).toBe(true);
+    expect(viaPayment.effectiveTilgungPct).toBeCloseTo(2, 6);
+    expect(viaPayment.effectiveMonthlyPayment).toBeCloseTo(mp2, 4);
+    // same loan path → same interest and end balance
+    expect(Math.abs(viaPayment.totalInterest - viaTilgung.totalInterest)).toBeLessThan(1);
+    expect(Math.abs(
+      viaPayment.loanBalance[viaPayment.loanBalance.length - 1] -
+      viaTilgung.loanBalance[viaTilgung.loanBalance.length - 1],
+    )).toBeLessThan(50);
+  });
+
+  it('a payment below the initial interest yields zero amortization during the fixed period', () => {
+    const res = runScenario({
+      ...state,
+      values: { ...state.values, tilgung_mode: 1, monthly_payment: 1_000 },
+    });
+    expect(res.effectiveTilgungPct).toBe(0);
+    // balance stays flat through the whole Zinsbindung…
+    expect(res.loanBalance[1]).toBeCloseTo(res.loanBalance[10], 2);
+    expect(res.loanBalance[10]).toBeCloseTo(loan, 2);
+    // …the payment is capped at interest-only…
+    expect(res.effectiveMonthlyPayment).toBeCloseTo((loan * ratePct) / 100 / 12, 2);
+    // …and afterwards the follow-up annuity amortizes over the remaining term.
+    expect(res.loanBalance[res.loanBalance.length - 1]).toBeLessThan(loan);
+  });
+});
+
 describe('Monte Carlo cancellation', () => {
   it('aborts when shouldCancel returns true', () => {
     const state = defaultState();

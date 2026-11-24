@@ -27,7 +27,10 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
   Grundsteuer, maintenance reserve, Hausgeld/WEG.
 - **Mortgage modelling** in German terms: Zinsbindung (fixed period), Anfangstilgung
   (initial amortization) with German-style annuity, follow-up re-fixing over the
-  remaining term, Sondertilgung (extra repayments).
+  remaining term, Sondertilgung (extra repayments). The repayment can be defined
+  either as an annual Anfangstilgung rate **or directly as the desired monthly
+  payment** (the implied rate is derived and shown); a warning fires when the
+  payment doesn't cover the interest.
 - **Rent branch**: Kaltmiete + Nebenkosten, rent growth (optionally CPI-linked),
   Kaution (refundable), relocation costs.
 - **Alternative investment**: current capital in stocks/bonds, editable expected

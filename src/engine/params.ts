@@ -23,9 +23,14 @@ export type Group =
   | 'appreciation'
   | 'correlations';
 
-export type Kind = 'eur' | 'mrate' | 'pct' | 'count' | 'switch' | 'ratio';
+export type Kind = 'eur' | 'mrate' | 'pct' | 'count' | 'switch' | 'ratio' | 'select';
 
 export type CorrTag = 'stocks' | 'property' | 'inflation';
+
+export interface SelectOption {
+  value: number;
+  label: string;
+}
 
 export interface ParamDef {
   key: string;
@@ -36,6 +41,10 @@ export interface ParamDef {
   min?: number;
   max?: number;
   step?: number;
+  /** for kind === 'select': the choices */
+  options?: SelectOption[];
+  /** hide the parameter when this returns false (evaluated against raw values) */
+  visibleWhen?: (values: Record<string, number>) => boolean;
   /** false => always part of the model (no enable/disable switch in the UI) */
   toggleable?: boolean;
   /** default state of the toggle */
@@ -76,7 +85,7 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'vol_inflation', label: 'Volatility — inflation (σ)', group: 'global', kind: 'pct', default: 1.0, min: 0, max: 10, step: 0.25, toggleable: false, help: 'Annual standard deviation of inflation in the Monte Carlo.' },
 
   // ---------- Purchase ----------
-  { key: 'property_price', label: 'Property price', group: 'purchase', kind: 'eur', default: 500_000, min: 50_000, max: 5_000_000, step: 5000, toggleable: false },
+  { key: 'property_price', label: 'Property price', group: 'purchase', kind: 'eur', default: 500_000, min: 50_000, max: 5_000_000, step: 5000, toggleable: false, help: 'Agreed purchase price of the property (without transaction costs).' },
   { key: 'grunderwerbsteuer_rate', label: 'Grunderwerbsteuer (transfer tax)', group: 'purchase', kind: 'pct', default: 5.0, min: 3.5, max: 6.5, step: 0.5, mcable: true, help: 'Depends on Bundesland (3.5 %–6.5 %). % of price, one-off.' },
   { key: 'notary_rate', label: 'Notary & contract', group: 'purchase', kind: 'pct', default: 1.5, min: 0, max: 3, step: 0.1, mcable: true, help: '% of price, one-off.' },
   { key: 'grundbuch_rate', label: 'Grundbuch (land register)', group: 'purchase', kind: 'pct', default: 0.5, min: 0, max: 1.5, step: 0.1, mcable: true, help: '% of price, one-off.' },
@@ -94,7 +103,9 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'fixed_rate', label: 'Fixed interest rate', group: 'mortgage', kind: 'pct', default: 3.5, min: 0, max: 15, step: 0.05, mcable: true, help: 'Nominal annual rate during the Zinsbindung (fixed-rate) period.' },
   { key: 'fixed_years', label: 'Fixed-rate period (Zinsbindung)', group: 'mortgage', kind: 'count', default: 10, min: 1, max: 30, step: 1, mcable: true, help: 'Years the fixed rate is guaranteed.' },
   { key: 'followup_rate', label: 'Follow-up rate after fixed period', group: 'mortgage', kind: 'pct', default: 5.0, min: 0, max: 15, step: 0.25, toggleable: false, mcable: true, help: 'Assumed rate when re-fixing (or going variable) after Zinsbindung.' },
-  { key: 'initial_tilgung', label: 'Initial amortization (Anfangstilgung)', group: 'mortgage', kind: 'pct', default: 2.0, min: 0.5, max: 10, step: 0.25, toggleable: false, mcable: true, help: '% of the original loan repaid per year at the start.' },
+  { key: 'initial_tilgung', label: 'Initial amortization (Anfangstilgung)', group: 'mortgage', kind: 'pct', default: 2.0, min: 0.5, max: 10, step: 0.25, toggleable: false, mcable: true, visibleWhen: (v) => Math.round(v['tilgung_mode'] ?? 0) === 0, help: '% of the original loan repaid per year at the start.' },
+  { key: 'tilgung_mode', label: 'Define repayment via', group: 'mortgage', kind: 'select', default: 0, options: [ { value: 0, label: 'Anfangstilgung (% p.a.)' }, { value: 1, label: 'Monthly payment (€/mo)' } ], toggleable: false, help: 'Choose how to specify the initial repayment: as an annual amortization rate (German convention, % of the original loan) or directly as the desired total monthly payment to the bank. In payment mode the implied Anfangstilgung is derived automatically (shown in the results).' },
+  { key: 'monthly_payment', label: 'Desired monthly payment', group: 'mortgage', kind: 'mrate', default: 2_100, min: 100, max: 25_000, step: 25, toggleable: false, mcable: true, visibleWhen: (v) => Math.round(v['tilgung_mode'] ?? 0) === 1, help: 'Total monthly payment to the bank during the fixed-rate period (interest + amortization). The implied Anfangstilgung is derived from it — if the payment does not cover the initial interest, no amortization happens and the loan never shrinks.' },
   { key: 'loan_term_years', label: 'Full loan term', group: 'mortgage', kind: 'count', default: 30, min: 5, max: 40, step: 1, toggleable: false, help: 'Total life of the loan; follow-up payment amortizes over the remaining term.' },
   { key: 'sondertilgung_pct', label: 'Sondertilgung — % of loan / year', group: 'mortgage', kind: 'pct', default: 0, min: 0, max: 10, step: 0.5, mcable: true, help: 'Extra repayment as % of the *original* loan per year.' },
   { key: 'sondertilgung_eur', label: 'Sondertilgung — fixed amount / year', group: 'mortgage', kind: 'eur', default: 0, min: 0, max: 100_000, step: 1000, mcable: true, help: 'Extra repayment in EUR per year.' },
@@ -108,7 +119,7 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'rent_upfront_costs', label: 'Relocation costs (kitchen, deposit provision…)', group: 'rent', kind: 'eur', default: 3000, min: 0, max: 50_000, step: 500, mcable: true, help: 'One-off cost when moving into the rental.' },
 
   // ---------- Investment ----------
-  { key: 'capital_stocks', label: 'Current capital — stocks / equity funds', group: 'invest', kind: 'eur', default: 40_000, min: 0, max: 10_000_000, step: 1000, toggleable: false },
+  { key: 'capital_stocks', label: 'Current capital — stocks / equity funds', group: 'invest', kind: 'eur', default: 40_000, min: 0, max: 10_000_000, step: 1000, toggleable: false, help: 'Liquid capital available today held in stocks/broad equity ETFs. In the renting branch it stays invested; part of it can be consumed as equity when buying.' },
   { key: 'capital_bonds', label: 'Current capital — bonds / savings', group: 'invest', kind: 'eur', default: 15_000, min: 0, max: 10_000_000, step: 1000, toggleable: false, help: 'Fixed income & cash-like holdings.' },
   { key: 'expected_return_stocks', label: 'Expected return — stocks', group: 'invest', kind: 'pct', default: 7.0, min: 0, max: 20, step: 0.25, corr: 'stocks', mcable: true, help: 'Nominal p.a., before taxes.' },
   { key: 'vol_stocks', label: 'Volatility — stocks (σ)', group: 'invest', kind: 'pct', default: 15.0, min: 0, max: 40, step: 1, toggleable: false, help: 'Annual standard deviation used in the Monte Carlo.' },
@@ -129,8 +140,8 @@ export const PARAM_DEFS: ParamDef[] = [
 
   // ---------- Correlations (MC only) ----------
   { key: 'corr_stocks_property', label: 'ρ(stocks, property)', group: 'correlations', kind: 'ratio', default: 0.3, min: -1, max: 1, step: 0.1, toggleable: false, help: 'Correlation of stock returns and property growth shocks.' },
-  { key: 'corr_stocks_inflation', label: 'ρ(stocks, inflation)', group: 'correlations', kind: 'ratio', default: 0.2, min: -1, max: 1, step: 0.1, toggleable: false },
-  { key: 'corr_rent_inflation', label: 'ρ(rent growth, inflation)', group: 'correlations', kind: 'ratio', default: 0.9, min: -1, max: 1, step: 0.1, toggleable: false },
+  { key: 'corr_stocks_inflation', label: 'ρ(stocks, inflation)', group: 'correlations', kind: 'ratio', default: 0.2, min: -1, max: 1, step: 0.1, toggleable: false, help: 'Correlation between yearly stock shocks and inflation shocks in the Monte Carlo. Equity is often treated as a mild inflation hedge (0 … 0.3).' },
+  { key: 'corr_rent_inflation', label: 'ρ(rent growth, inflation)', group: 'correlations', kind: 'ratio', default: 0.9, min: -1, max: 1, step: 0.1, toggleable: false, help: 'Correlation between rent-growth shocks and inflation shocks. German rents track CPI closely, so a high positive value (≈0.9) is realistic.' },
 ];
 
 export const PARAM_MAP: Record<string, ParamDef> = Object.fromEntries(
@@ -162,6 +173,8 @@ export const ICON: Record<string, string> = {
   fixed_years: '⏳',
   followup_rate: '🔁',
   initial_tilgung: '📉',
+  tilgung_mode: '🎛️',
+  monthly_payment: '💳',
   loan_term_years: '🗓️',
   sondertilgung_pct: '➕',
   sondertilgung_eur: '💶',

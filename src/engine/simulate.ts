@@ -56,6 +56,12 @@ export interface ScenarioResult {
   restschuldAtFixation: number;
   /** year index of the fixed-rate period end used for restschuldAtFixation */
   fixationYear: number;
+  /** true when repayment was defined via a desired monthly payment */
+  paymentMode: boolean;
+  /** effective Anfangstilgung actually used (% of original loan p.a.; derived in payment mode) */
+  effectiveTilgungPct: number;
+  /** effective initial monthly payment to the bank during the fixed period */
+  effectiveMonthlyPayment: number;
   totalInterest: number;
   /** yearly amortization rows (payment split into interest / principal / Sondertilgung) */
   amortization: AmortYear[];
@@ -98,12 +104,24 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const ltv = loanAmount / Math.max(1, price);
   const ltvSurcharge = sw('ltv_rate_surcharge') ? ltvSurchargePct(ltv) : 0;
 
+  const effFixedRatePct = v('fixed_rate') + ltvSurcharge;
+
+  // Initial repayment: directly as % p.a., or derived from a desired monthly payment
+  const paymentMode = Math.round(v('tilgung_mode')) === 1;
+  let tilgungPct = v('initial_tilgung');
+  if (paymentMode && loanAmount > 0) {
+    const mp = v('monthly_payment');
+    const interestOnly = (loanAmount * effFixedRatePct) / 100 / 12;
+    // payment − interest = amortization; expressed as % of the original loan p.a.
+    tilgungPct = mp > interestOnly ? ((mp - interestOnly) * 12) / loanAmount * 100 : 0;
+  }
+
   const mortgage = mortgageSchedule({
     loan: loanAmount,
-    fixedRatePct: v('fixed_rate') + ltvSurcharge,
+    fixedRatePct: effFixedRatePct,
     fixedYears: Math.round(v('fixed_years')),
     followupRatePct: v('followup_rate') + ltvSurcharge,
-    tilgungPct: v('initial_tilgung'),
+    tilgungPct,
     termYears: Math.round(v('loan_term_years')),
     sondertilgungPct: v('sondertilgung_pct'),
     sondertilgungEur: v('sondertilgung_eur'),
@@ -298,6 +316,9 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     ltvSurcharge,
     restschuldAtFixation,
     fixationYear,
+    paymentMode,
+    effectiveTilgungPct: tilgungPct,
+    effectiveMonthlyPayment: mortgage.payment[0],
     totalInterest: mortgage.totalInterest,
     amortization: yearlyAmortization(mortgage, H),
     terminalDiff: nwBuy[last] - nwRent[last],

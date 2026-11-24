@@ -3,12 +3,17 @@
  * UI smoke test — mounts the real App in jsdom and asserts the results render.
  * Catches blank-page regressions (hook-order violations, render crashes…).
  */
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import App from '../../App';
 import { defaultState } from '../../engine/params';
 import { autosaveState, loadAutosave, clearAutosave } from '../../engine/state-io';
+
+// vitest globals are off → testing-library's auto-cleanup doesn't register;
+// unmount every render after each test so queries don't match stale DOM.
+afterEach(cleanup);
+afterAll(() => { vi.restoreAllMocks(); });
 
 // Plotly's module init needs APIs jsdom lacks; stub the URL blob layer.
 beforeAll(() => {
@@ -54,5 +59,28 @@ describe('autosave — values survive a reload', () => {
     render(<App />);
     expect(screen.getByText('Restored your last session.')).toBeTruthy();
     expect(screen.getByDisplayValue('432100')).toBeTruthy();
+  });
+});
+
+describe('repayment mode UI', () => {
+  it('help tooltips ("?" marks) are present on parameter fields', () => {
+    clearAutosave();
+    const { container } = render(<App />);
+    expect(container.querySelectorAll('.help-tip').length).toBeGreaterThan(20);
+    expect(container.querySelector('.help-tooltip')).toBeTruthy();
+  });
+
+  it('switching to "Monthly payment" swaps Anfangstilgung for the payment input', () => {
+    clearAutosave();
+    const { container } = render(<App />);
+    // default mode: Anfangstilgung visible…
+    expect(screen.getAllByText(/Initial amortization \(Anfangstilgung\)/).length).toBeGreaterThan(0);
+    // …the mode select is the only param-kind select (MC dist selects hidden by default)
+    const modeSelect = container.querySelector('.param-input select') as HTMLSelectElement;
+    expect(modeSelect.value).toBe('0');
+    fireEvent.change(modeSelect, { target: { value: '1' } });
+    expect(screen.getAllByText(/Desired monthly payment/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Initial amortization \(Anfangstilgung\)/)).toBeNull();
+    expect((container.querySelector('.param-input select') as HTMLSelectElement).value).toBe('1');
   });
 });

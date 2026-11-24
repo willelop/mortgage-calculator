@@ -254,3 +254,70 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
   body { font-size: 11pt; }
   @page { margin: 12mm; }
 }
+
+/* "?" tooltips on parameter fields */
+.help-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  flex: 0 0 auto;
+}
+.help-tip .help-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+.help-tip:hover .help-mark,
+.help-tip:focus .help-mark {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.help-tip .help-tooltip {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 250px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: #26333d;
+  color: #f2f6f9;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  font-weight: 400;
+  white-space: normal;
+  text-align: left;
+  z-index: 60;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+/* caret */
+.help-tip .help-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #26333d;
+}
+.help-tip:hover .help-tooltip,
+.help-tip:focus .help-tooltip {
+  display: block;
+}
+
+/* mode select */
+.param-input select { font-size: 0.8rem; padding: 3px 6px; max-width: 190px; }
