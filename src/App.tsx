@@ -339,7 +339,7 @@ export default function App(): JSX.Element {
           <section className="card assumptions">
             <h2>Model assumptions & limits</h2>
             <ul>
-              <li>Net worth comparison assumes both branches have the same income; the entire difference in monthly cost of buying vs. renting is invested (or withdrawn) in the renting branch — see plan/app-plan.md §2.5.</li>
+              <li>Net worth comparison assumes both branches have the same income; the entire difference in monthly cost of buying vs. renting is invested (or withdrawn) in the renting branch.</li>
               <li>Investment taxes model Abgeltungsteuer with Teilfreistellung and Sparerpauschbetrag at withdrawal/liquidation; no Vorabpauschale.</li>
               <li>Owner-occupied property capital gains are tax-free after §23 EStG's 10-year holding period (toggleable).</li>
               <li>No income tax effects (e.g. no depreciation, no tax deductibility — self-use only).</li>
@@ -350,7 +350,7 @@ export default function App(): JSX.Element {
       </main>
 
       <footer>
-        <span>plan/app-plan.md v0.1 — pure TypeScript, GitHub Pages-ready. No data leaves your browser.</span>
+        <span>100 % client-side, generated with AI (Mistral Vibe) — GitHub Pages-ready. No data leaves your browser.</span>
       </footer>
     </div>
   );

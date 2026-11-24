@@ -1,5 +1,11 @@
 # Buy vs. Rent — German Mortgage Calculator
 
+> [!IMPORTANT]
+> **This project was entirely generated with AI** (Mistral Vibe / Mistral AI, with
+> human direction). The code, documentation and tests were authored by an AI
+> assistant and have **not been professionally audited**. Please review the model
+> assumptions before relying on any numbers.
+
 A fully client-side analysis tool for the **buy vs. rent** decision in Germany:
 deterministic nominal scenario plus Monte-Carlo simulation over every parameter
 you enroll, with percentile fan charts, break-even statistics and a sensitivity
@@ -63,7 +69,7 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
   difference histogram, sensitivity tornado chart.
 - **Shareable scenarios**: full state encoded in the URL; named scenarios in localStorage.
 
-## Model assumptions & limits (see `plan/app-plan.md` for the full plan)
+## Model assumptions & limits
 
 - Both branches are assumed to have equal income; the *difference* in monthly
   cost of buying vs. renting is invested (or withdrawn) in the renting branch.
