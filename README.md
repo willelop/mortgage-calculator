@@ -89,3 +89,11 @@ src/engine/          pure TypeScript, no DOM — unit tested
 src/ui/              React components + Plotly charts
 .github/workflows/   CI + Pages deployment
 ```
+
+## License
+
+[MIT](LICENSE) — © 2026 The Buy-vs-Rent Calculator contributors.
+You may use, modify and host the code freely, including commercially; keep the
+copyright notice. **Disclaimer:** this tool is for educational purposes and is
+*not* financial or tax advice — verify critical numbers with your bank or tax
+advisor.
