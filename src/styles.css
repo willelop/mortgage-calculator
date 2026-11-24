@@ -23,6 +23,13 @@ header h1 { margin: 0 0 4px; font-size: 1.5rem; }
 header .de { color: var(--muted); font-weight: normal; font-size: 1rem; }
 .subtitle { color: var(--muted); margin: 0 0 12px; }
 
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.brand .logo { flex: 0 0 auto; }
+.brand h1 { margin: 0; }
+.brand .subtitle { margin: 2px 0 0; }
+
+.muted { color: var(--muted); font-size: 0.85rem; }
+
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .toolbar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.85rem; }
 
@@ -84,6 +91,80 @@ button.danger { color: #a13c3c; }
 .mc-inputs { display: flex; gap: 8px; align-items: center; }
 .mc-inputs label { color: var(--muted); font-size: 0.8rem; display: flex; gap: 4px; align-items: center; }
 .mc-inputs input { width: 100px; text-align: right; }
+
+/* --- parameter boxes ------------------------------------------------------ */
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 10px;
+}
+
+.param-box {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafbfc;
+  overflow: hidden;
+}
+.param-box.off { opacity: 0.55; }
+.param-box.off .icon { filter: grayscale(1); }
+
+.param-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  flex-wrap: wrap;
+}
+
+.param-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1 1 190px;
+  font-size: 0.88rem;
+}
+.param-label .icon { font-size: 1.05rem; line-height: 1; }
+.param-label .text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.param-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.param-input input[type='number'] { width: 105px; text-align: right; }
+.param-input .unit { color: var(--muted); font-size: 0.75rem; min-width: 34px; }
+.param-input .switch { display: flex; align-items: center; gap: 6px; }
+
+.mc-toggle {
+  color: #4a6fa5;
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.param-box:has(.mc-toggle input:checked) .mc-toggle { color: #fff; }
+.param-box:has(.mc-toggle input:checked) .mc-toggle { background: #4a6fa5; border-radius: 999px; padding: 2px 8px; }
+
+.param-mc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-top: 1px dashed #b9c8d4;
+  background: #eef3f8;
+  flex-wrap: wrap;
+}
+.param-mc label { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); }
+.param-mc input[type='number'] { width: 95px; text-align: right; }
+.param-mc select { font-size: 0.8rem; padding: 3px 6px; }
 
 .keynumbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
 .stat {

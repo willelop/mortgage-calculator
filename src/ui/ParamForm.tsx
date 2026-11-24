@@ -1,10 +1,12 @@
 import React from 'react';
-import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, Group, ParamState, McSpec, Dist } from '../engine/params';
+import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, McSpec, Dist } from '../engine/params';
 
 interface Props {
   state: ParamState;
   onChange: (next: ParamState) => void;
 }
+
+type Setter = (key: string, patch: Partial<{ value: number; on: boolean; mc: McSpec }>) => void;
 
 const DIST_LABELS: Record<Dist, string> = {
   lognormal: 'Lognormal',
@@ -14,7 +16,7 @@ const DIST_LABELS: Record<Dist, string> = {
 };
 
 export function ParamForm({ state, onChange }: Props): JSX.Element {
-  const set = (key: string, patch: Partial<{ value: number; on: boolean; mc: McSpec }>) => {
+  const set: Setter = (key, patch) => {
     const next: ParamState = {
       values: { ...state.values },
       on: { ...state.on },
@@ -35,122 +37,126 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
   );
 }
 
-function GroupCard({
-  group,
-  state,
-  set,
-}: {
-  group: Group;
-  state: ParamState;
-  set: (key: string, patch: Partial<{ value: number; on: boolean; mc: McSpec }>) => void;
-}): JSX.Element | null {
+function GroupCard({ group, state, set }: { group: Group; state: ParamState; set: Setter }): JSX.Element | null {
   const defs = PARAM_DEFS.filter((d) => d.group === group);
 
   return (
     <section className="card">
       <h2>{GROUP_LABELS[group]}</h2>
-      <table className="params">
-        <tbody>
-          {defs.map((d) => {
-            const toggleable = d.toggleable !== false;
-            const isOn = toggleable ? state.on[d.key] ?? d.defaultOn ?? true : true;
-            const spec = state.mc[d.key];
-            const rowClass = !isOn ? 'off' : '';
-            return (
-              <React.Fragment key={d.key}>
-                <tr className={rowClass}>
-                  <td className="label" title={d.help ?? ''}>
-                    {toggleable && (
-                      <input
-                        type="checkbox"
-                        checked={isOn}
-                        onChange={(e) => set(d.key, { on: e.target.checked })}
-                        aria-label={`Enable ${d.label}`}
-                      />
-                    )}{' '}
-                    {d.label}
-                  </td>
-                  <td className="input">
-                    {d.kind === 'switch' ? (
-                      <input
-                        type="checkbox"
-                        checked={state.values[d.key] !== 0}
-                        onChange={(e) => set(d.key, { value: e.target.checked ? 1 : 0 })}
-                      />
-                    ) : (
-                      <input
-                        type="number"
-                        value={state.values[d.key]}
-                        min={d.min}
-                        max={d.max}
-                        step={d.step ?? 1}
-                        onChange={(e) => set(d.key, { value: parseFloat(e.target.value) })}
-                      />
-                    )}
-                  </td>
-                  <td className="unit">{unitOf(d.kind)}</td>
-                  {d.mcable ? (
-                    <td className="mc">
-                      <label title="Include this parameter in the Monte Carlo simulation with the range below">
-                        <input
-                          type="checkbox"
-                          checked={spec?.enabled ?? false}
-                          onChange={(e) => set(d.key, { mc: { ...(spec as McSpec), enabled: e.target.checked } })}
-                        />{' '}
-                        MC
-                      </label>
-                    </td>
-                  ) : (
-                    <td />
-                  )}
-                </tr>
-                {d.mcable && spec?.enabled && (
-                  <tr className="mc-row">
-                    <td />
-                    <td className="mc-inputs" colSpan={3}>
-                      <select
-                        value={spec.dist}
-                        onChange={(e) =>
-                          set(d.key, { mc: { ...spec, dist: e.target.value as Dist } })
-                        }
-                      >
-                        {(Object.keys(DIST_LABELS) as Dist[]).map((dist) => (
-                          <option key={dist} value={dist}>
-                            {DIST_LABELS[dist]}
-                          </option>
-                        ))}
-                      </select>
-                      <label>
-                        min
-                        <input
-                          type="number"
-                          value={spec.min}
-                          step={d.step ?? 1}
-                          onChange={(e) =>
-                            set(d.key, { mc: { ...spec, min: parseFloat(e.target.value) } })
-                          }
-                        />
-                      </label>
-                      <label>
-                        max
-                        <input
-                          type="number"
-                          value={spec.max}
-                          step={d.step ?? 1}
-                          onChange={(e) =>
-                            set(d.key, { mc: { ...spec, max: parseFloat(e.target.value) } })
-                          }
-                        />
-                      </label>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="param-grid">
+        {defs.map((d) => (
+          <ParamBox key={d.key} def={d} state={state} set={set} />
+        ))}
+      </div>
     </section>
+  );
+}
+
+function ParamBox({
+  def,
+  state,
+  set,
+}: {
+  def: ParamDef;
+  state: ParamState;
+  set: Setter;
+}): JSX.Element {
+  const toggleable = def.toggleable !== false;
+  const isOn = toggleable ? state.on[def.key] ?? def.defaultOn ?? true : true;
+  const spec = state.mc[def.key];
+  const mcOn = def.mcable && (spec?.enabled ?? false);
+  const cls = [
+    'param-box',
+    !isOn ? 'off' : '',
+    mcOn ? 'mc-on' : '',
+  ].join(' ');
+
+  return (
+    <div className={cls} title={def.help ?? ''}>
+      <div className="param-main">
+        <div className="param-label">
+          {toggleable && (
+            <input
+              type="checkbox"
+              className="toggle"
+              checked={isOn}
+              onChange={(e) => set(def.key, { on: e.target.checked })}
+              aria-label={`Enable ${def.label}`}
+            />
+          )}
+          <span className="icon" aria-hidden>{iconOf(def.key)}</span>
+          <span className="text">{def.label}</span>
+        </div>
+        <div className="param-input">
+          {def.kind === 'switch' ? (
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={state.values[def.key] !== 0}
+                onChange={(e) => set(def.key, { value: e.target.checked ? 1 : 0 })}
+              />
+              <span className="unit">{state.values[def.key] !== 0 ? 'on' : 'off'}</span>
+            </label>
+          ) : (
+            <>
+              <input
+                type="number"
+                value={state.values[def.key]}
+                min={def.min}
+                max={def.max}
+                step={def.step ?? 1}
+                onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
+              />
+              <span className="unit">{unitOf(def.kind)}</span>
+            </>
+          )}
+          {def.mcable && spec && (
+            <label className="mc-toggle" title="Include this parameter in the Monte Carlo simulation with the range below">
+              <input
+                type="checkbox"
+                checked={spec.enabled}
+                onChange={(e) => set(def.key, { mc: { ...spec, enabled: e.target.checked } })}
+              />{' '}
+              MC
+            </label>
+          )}
+        </div>
+      </div>
+
+      {mcOn && spec && (
+        <div className="param-mc">
+          <select
+            value={spec.dist}
+            onChange={(e) => set(def.key, { mc: { ...spec, dist: e.target.value as Dist } })}
+            aria-label={`Distribution for ${def.label}`}
+          >
+            {(Object.keys(DIST_LABELS) as Dist[]).map((dist) => (
+              <option key={dist} value={dist}>
+                {DIST_LABELS[dist]}
+              </option>
+            ))}
+          </select>
+          <label>
+            <span className="unit">min</span>
+            <input
+              type="number"
+              value={spec.min}
+              step={def.step ?? 1}
+              onChange={(e) => set(def.key, { mc: { ...spec, min: parseFloat(e.target.value) } })}
+            />
+          </label>
+          <label>
+            <span className="unit">max</span>
+            <input
+              type="number"
+              value={spec.max}
+              step={def.step ?? 1}
+              onChange={(e) => set(def.key, { mc: { ...spec, max: parseFloat(e.target.value) } })}
+            />
+          </label>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -45,6 +45,8 @@ export interface ParamDef {
   /** Monte-Carlo-enrollable */
   mcable?: boolean;
   help?: string;
+  /** UI icon (emoji) for the parameter box */
+  icon?: string;
 }
 
 export const GROUP_LABELS: Record<Group, string> = {
@@ -131,6 +133,66 @@ export const PARAM_DEFS: ParamDef[] = [
 export const PARAM_MAP: Record<string, ParamDef> = Object.fromEntries(
   PARAM_DEFS.map((d) => [d.key, d]),
 );
+
+/** UI icons per parameter key (emoji, kept out of the engine data table for readability). */
+export const ICON: Record<string, string> = {
+  // global
+  horizon_years: '📅',
+  inflation: '🌡️',
+  vol_inflation: '〰️',
+  // purchase
+  property_price: '🏠',
+  grunderwerbsteuer_rate: '🏛️',
+  notary_rate: '✒️',
+  grundbuch_rate: '📜',
+  makler_rate: '🤝',
+  renovation_budget: '🛠️',
+  grundsteuer_annual: '🧾',
+  building_insurance_annual: '🛡️',
+  maintenance_rate: '🔧',
+  hausgeld_annual: '🏢',
+  // mortgage
+  equity: '💰',
+  fixed_rate: '💹',
+  fixed_years: '⏳',
+  followup_rate: '🔁',
+  initial_tilgung: '📉',
+  loan_term_years: '🗓️',
+  sondertilgung_pct: '➕',
+  sondertilgung_eur: '💶',
+  vol_property: '〰️',
+  // rent
+  rent_cold: '🔑',
+  nebenkosten_monthly: '💡',
+  rent_increase: '📈',
+  rent_increase_linked_to_inflation: '🔗',
+  rent_upfront_costs: '🚚',
+  // investment
+  capital_stocks: '🗂️',
+  capital_bonds: '💵',
+  expected_return_stocks: '📊',
+  vol_stocks: '🎢',
+  expected_return_bonds: '🏦',
+  vol_bonds: '🌊',
+  freed_cash_invested: '💸',
+  capital_gains_tax_rate: '⚖️',
+  teilfreistellung_rate: '🎁',
+  sparerpauschbetrag: '🎟️',
+  // appreciation
+  property_appreciation: '🌱',
+  appreciation_linked_to_inflation: '🔗',
+  sell_at_horizon: '🏷️',
+  selling_costs_rate: '📤',
+  capital_gains_tax_before_10y: '⚖️',
+  // correlations
+  corr_stocks_property: '🔀',
+  corr_stocks_inflation: '🔀',
+  corr_rent_inflation: '🔀',
+};
+
+export function iconOf(key: string): string {
+  return ICON[key] ?? '•';
+}
 
 /** Monte-Carlo distribution choices for an enrolled parameter. */
 export type Dist = 'normal' | 'uniform' | 'triangular' | 'lognormal';

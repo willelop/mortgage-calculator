@@ -5,6 +5,7 @@ import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
 import { Results } from './ui/Results';
+import { Logo } from './ui/Logo';
 import {
   applyPreset, PRESETS, fromLocation, toShareUrl,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
@@ -96,10 +97,15 @@ export default function App(): JSX.Element {
   return (
     <div className="app">
       <header>
-        <h1>Buy vs. Rent — Mortgage Calculator <span className="de">(Germany)</span></h1>
-        <p className="subtitle">
-          Deterministic + Monte-Carlo analysis. All data stays in your browser.
-        </p>
+        <div className="brand">
+          <Logo />
+          <div>
+            <h1>Buy vs. Rent — Mortgage Calculator <span className="de">(Germany)</span></h1>
+            <p className="subtitle">
+              Deterministic + Monte-Carlo analysis. All data stays in your browser.
+            </p>
+          </div>
+        </div>
         <div className="toolbar">
           <label>
             Preset
