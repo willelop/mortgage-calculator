@@ -104,7 +104,6 @@ button.danger { color: #a13c3c; }
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #fafbfc;
-  overflow: hidden;
 }
 .param-box.off { opacity: 0.55; }
 .param-box.off .icon { filter: grayscale(1); }
@@ -161,6 +160,7 @@ button.danger { color: #a13c3c; }
   border-top: 1px dashed #b9c8d4;
   background: #eef3f8;
   flex-wrap: wrap;
+  border-radius: 0 0 10px 10px; /* clip into the box corners without overflow:hidden (tooltips stay visible) */
 }
 .param-mc label { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); }
 .param-mc input[type='number'] { width: 95px; text-align: right; }
