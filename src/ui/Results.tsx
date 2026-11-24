@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScenarioResult } from '../engine/simulate';
+import { AmortYear } from '../engine/mortgage';
 import { McResult } from '../engine/monte-carlo';
 import { SensitivityResult } from '../engine/sensitivity';
 import { fmtEur, fmtSignedEur, fmtPct } from '../format';
@@ -62,6 +63,8 @@ export function Results({ nominal, mc, sens }: Props): JSX.Element | null {
           }}
         />
       </section>
+
+      {nominal.loanAmount > 0 && <AmortizationSection amort={nominal.amortization} />}
 
       <section className="card">
         <h2>Cumulative cost of staying</h2>
@@ -249,6 +252,96 @@ function FanChart({ mc }: { mc: McResult }): JSX.Element {
         hovermode: 'x',
       }}
     />
+  );
+}
+
+const AMORT_COLORS = {
+  interest: '#c05621',
+  principal: '#1a7f4b',
+  sonder: '#4a6fa5',
+};
+
+/** Yearly amortization: % of each year's payment going to interest vs principal,
+ *  plus the full yearly table (payments, interest, regular amortization,
+ *  Sondertilgung, remaining balance). Rows stop when the loan is repaid. */
+function AmortizationSection({ amort }: { amort: AmortYear[] }): JSX.Element {
+  const rows = React.useMemo(() => {
+    const active = amort.filter((r) => r.payment > 0.005 || r.balanceEnd > 0.005);
+    return active.length > 0 ? active : amort;
+  }, [amort]);
+
+  const pct = (v: number, total: number) => (total > 0 ? (v / total) * 100 : 0);
+  const x = rows.map((r) => r.year);
+
+  return (
+    <section className="card">
+      <h2>Amortization — interest vs principal</h2>
+      <p className="muted">
+        Share of each year's mortgage payment that goes to interest vs. amortization
+        (regular annuity repayment and Sondertilgung). Early on the payment is mostly
+        interest; the share shifts towards principal over time.
+      </p>
+      <Plot
+        data={[
+          {
+            x,
+            y: rows.map((r) => pct(r.interest, r.payment)),
+            name: 'Interest',
+            type: 'bar',
+            marker: { color: AMORT_COLORS.interest },
+          },
+          {
+            x,
+            y: rows.map((r) => pct(r.principal, r.payment)),
+            name: 'Amortization (annuity)',
+            type: 'bar',
+            marker: { color: AMORT_COLORS.principal },
+          },
+          {
+            x,
+            y: rows.map((r) => pct(r.sondertilgung, r.payment)),
+            name: 'Sondertilgung',
+            type: 'bar',
+            marker: { color: AMORT_COLORS.sonder },
+          },
+        ]}
+        layout={{
+          barmode: 'stack',
+          bargap: 0.2,
+          margin: { l: 60, r: 20, t: 10, b: 50 },
+          xaxis: { title: 'Year' },
+          yaxis: { title: '% of yearly payment', range: [0, 100], ticksuffix: '%' },
+          legend: { orientation: 'h' },
+          hovermode: 'x',
+        }}
+      />
+      <div className="amort-table-wrap">
+        <table className="amort-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Payment</th>
+              <th>Interest</th>
+              <th>Amortization</th>
+              <th>Sondertilgung</th>
+              <th>Balance (end of year)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.year}>
+                <td>{r.year}</td>
+                <td>{fmtEur(r.payment)}</td>
+                <td className="amort-neg">{fmtEur(r.interest)}</td>
+                <td className="amort-pos">{fmtEur(r.principal)}</td>
+                <td className="amort-sonder">{fmtEur(r.sondertilgung)}</td>
+                <td>{fmtEur(r.balanceEnd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

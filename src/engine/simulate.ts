@@ -20,7 +20,7 @@
  */
 
 import { ParamState, num, switchOn } from './params';
-import { mortgageSchedule } from './mortgage';
+import { mortgageSchedule, yearlyAmortization, AmortYear } from './mortgage';
 import {
   Portfolio, TaxParams, newPortfolio, growMonth, deposit, withdrawGross,
   resetYearAllowance, payableTax,
@@ -49,6 +49,8 @@ export interface ScenarioResult {
   transactionCosts: number;
   loanAmount: number;
   totalInterest: number;
+  /** yearly amortization rows (payment split into interest / principal / Sondertilgung) */
+  amortization: AmortYear[];
   terminalDiff: number;
   breakEvenYear: number | null; // first year (label) with nwBuy >= nwRent
   liquidationTaxBuy: number;
@@ -256,6 +258,7 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     transactionCosts,
     loanAmount,
     totalInterest: mortgage.totalInterest,
+    amortization: yearlyAmortization(mortgage, H),
     terminalDiff: nwBuy[last] - nwRent[last],
     breakEvenYear,
     liquidationTaxBuy: payableTax(buyPortfolio, taxP),
