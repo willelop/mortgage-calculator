@@ -84,3 +84,24 @@ describe('repayment mode UI', () => {
     expect((container.querySelector('.param-input select') as HTMLSelectElement).value).toBe('1');
   });
 });
+
+describe('dark theme toggle', () => {
+  it('toggles data-theme on <html> and persists the choice', () => {
+    clearAutosave();
+    localStorage.removeItem('buyvsrent.theme');
+    const { unmount } = render(<App />);
+    const toggle = screen.getByTitle(/Switch to dark theme/);
+    expect(document.documentElement.dataset.theme === 'dark' || document.documentElement.dataset.theme === 'light').toBe(true);
+
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('buyvsrent.theme')).toBe('dark');
+    expect(screen.getByTitle('Switch to light theme')).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem('buyvsrent.theme')).toBe('light');
+    unmount();
+    localStorage.removeItem('buyvsrent.theme');
+  });
+});

@@ -19,8 +19,8 @@ export function Logo({ size = 44 }: { size?: number }): JSX.Element {
       </defs>
       {/* roof */}
       <path d="M6 30 L32 8 L58 30" fill="none" stroke="url(#logo-roof)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-      {/* walls */}
-      <path d="M14 30 v26 h36 v-26" fill="none" stroke="#1d2733" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* walls — currentColor follows the theme text color */}
+      <path d="M14 30 v26 h36 v-26" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
       {/* rising line chart inside */}
       <path d="M20 48 C26 46 27 42 31 40 C35 38 36 33 44 30" fill="none" stroke="#c05621" strokeWidth="4" strokeLinecap="round" />
       <circle cx="44" cy="30" r="3.4" fill="#c05621" />

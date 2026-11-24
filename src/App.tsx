@@ -7,6 +7,7 @@ import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
 import { Results } from './ui/Results';
 import { Logo } from './ui/Logo';
+import { initialTheme, applyTheme, Theme } from './theme';
 import { fmtEur } from './format';
 import {
   applyPreset, PRESETS, fromLocation, toShareUrl,
@@ -16,6 +17,13 @@ import {
 
 export default function App(): JSX.Element {
   const restoredRef = useRef(false);
+  const [theme, setTheme] = useState<Theme>(() => initialTheme());
+
+  const toggleTheme = useCallback(() => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next); // set the DOM attribute before the re-render so charts recolor correctly
+    setTheme(next);
+  }, [theme]);
   const [state, setState] = useState<ParamState>(() => {
     // Priority: shared URL → last session (autosave) → defaults
     const fromUrl = fromLocation();
@@ -223,6 +231,14 @@ export default function App(): JSX.Element {
           </div>
         </div>
         <div className="toolbar">
+          <button
+            className="icon-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <label>
             Preset
             <select value={preset} onChange={(e) => applyPresetByName(e.target.value)}>

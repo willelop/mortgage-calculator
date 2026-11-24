@@ -53,6 +53,9 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
 - **Autosave**: all values (including toggles and MC ranges) persist in your
   browser — the next visit restores your last session automatically, no re-entry.
   Shared-URL state still takes precedence; named scenarios are saved separately.
+- **Dark theme**: toggle with the 🌙/☀️ button (top left); the choice persists and
+  charts, tooltips and the logo recolor accordingly. Defaults to your system
+  preference on first visit.
 - **Correlated Monte Carlo**: ρ(stocks, property), ρ(stocks, inflation), ρ(rent, inflation);
   per-year lognormal return paths; seeded and therefore reproducible.
 - **Outputs**: nominal net worth & cumulative cost charts, MC percentile fan charts,
