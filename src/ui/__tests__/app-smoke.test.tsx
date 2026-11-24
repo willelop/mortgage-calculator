@@ -3,13 +3,24 @@
  * UI smoke test — mounts the real App in jsdom and asserts the results render.
  * Catches blank-page regressions (hook-order violations, render crashes…).
  */
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from '../../App';
+import { defaultState } from '../../engine/params';
+import { autosaveState, loadAutosave, clearAutosave } from '../../engine/state-io';
+
+// Plotly's module init needs APIs jsdom lacks; stub the URL blob layer.
+beforeAll(() => {
+  if (!window.URL.createObjectURL) {
+    (window.URL as unknown as Record<string, unknown>).createObjectURL = vi.fn(() => 'blob:mock');
+    (window.URL as unknown as Record<string, unknown>).revokeObjectURL = vi.fn();
+  }
+});
 
 describe('App smoke', () => {
   it('renders parameters and nominal results without crashing', () => {
+    clearAutosave();
     const { container } = render(<App />);
     // header + form are present
     expect(screen.getByText(/Buy vs\. Rent/)).toBeTruthy();
@@ -20,5 +31,28 @@ describe('App smoke', () => {
     expect(screen.getByText(/Restschuld after fixed period/)).toBeTruthy();
     // no error boundary / blank output
     expect(container.textContent!.length).toBeGreaterThan(500);
+  });
+});
+
+describe('autosave — values survive a reload', () => {
+  it('round-trips state through the autosave slot', () => {
+    clearAutosave();
+    expect(loadAutosave()).toBeNull();
+    const s = defaultState();
+    s.values['property_price'] = 432_100;
+    autosaveState(s);
+    const restored = loadAutosave();
+    expect(restored?.values['property_price']).toBe(432_100);
+    expect(restored?.values['fixed_rate']).toBe(s.values['fixed_rate']);
+  });
+
+  it('restores the last session on mount (price visible in the form + toast)', () => {
+    clearAutosave();
+    const s = defaultState();
+    s.values['property_price'] = 432_100;
+    autosaveState(s);
+    render(<App />);
+    expect(screen.getByText('Restored your last session.')).toBeTruthy();
+    expect(screen.getByDisplayValue('432100')).toBeTruthy();
   });
 });

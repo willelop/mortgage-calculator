@@ -10,19 +10,52 @@ import { fmtEur } from './format';
 import {
   applyPreset, PRESETS, fromLocation, toShareUrl,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
+  autosaveState, loadAutosave,
 } from './engine/state-io';
 
 export default function App(): JSX.Element {
-  const [state, setState] = useState<ParamState>(() => fromLocation() ?? defaultState());
+  const restoredRef = useRef(false);
+  const [state, setState] = useState<ParamState>(() => {
+    // Priority: shared URL → last session (autosave) → defaults
+    const fromUrl = fromLocation();
+    if (fromUrl) return fromUrl;
+    const last = loadAutosave();
+    if (last) {
+      restoredRef.current = true;
+      return last;
+    }
+    return defaultState();
+  });
   const [nominal, setNominal] = useState<ScenarioResult | null>(null);
   const [mc, setMc] = useState<McResult | null>(null);
   const [sens, setSens] = useState<SensitivityResult | null>(null);
   const [mcRuns, setMcRuns] = useState(1000);
   const [seed, setSeed] = useState(42);
   const [running, setRunning] = useState<'nominal' | 'mc' | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [preset, setPreset] = useState('');
   const [mcProgress, setMcProgress] = useState<number | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  // autosave: persist every state change (debounced) so the next visit restores it
+  const autosaveTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = window.setTimeout(() => autosaveState(state), 250);
+    return () => window.clearTimeout(autosaveTimer.current);
+  }, [state]);
+
+  // restore notice — only on first mount after loading from the autosave slot
+  const [mountedOnce, setMountedOnce] = useState(false);
+  useEffect(() => {
+    if (mountedOnce) return;
+    setMountedOnce(true);
+    if (restoredRef.current) showToast('Restored your last session.');
+  }, [mountedOnce, showToast]);
 
   // latest state for use inside long-lived worker callbacks
   const stateRef = useRef(state);
@@ -131,12 +164,11 @@ export default function App(): JSX.Element {
     const url = toShareUrl(state);
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      showToast('Link copied to clipboard.');
     } catch {
       window.prompt('Copy this link:', url);
     }
-  }, [state]);
+  }, [state, showToast]);
 
   const applyPresetByName = (name: string) => {
     setPreset(name);
@@ -201,7 +233,7 @@ export default function App(): JSX.Element {
           </button>
           <button onClick={() => setState(defaultState())}>↺ Reset to defaults</button>
         </div>
-        {copied && <div className="toast">Link copied to clipboard.</div>}
+        {toast && <div className="toast">{toast}</div>}
       </header>
 
       {!freedCashOn && (

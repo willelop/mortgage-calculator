@@ -47,6 +47,9 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
 - **Every parameter** can be individually enabled/disabled, and every parameter can
   be enrolled into the Monte Carlo with a variability range and distribution
   (normal / uniform / triangular / lognormal).
+- **Autosave**: all values (including toggles and MC ranges) persist in your
+  browser — the next visit restores your last session automatically, no re-entry.
+  Shared-URL state still takes precedence; named scenarios are saved separately.
 - **Correlated Monte Carlo**: ρ(stocks, property), ρ(stocks, inflation), ρ(rent, inflation);
   per-year lognormal return paths; seeded and therefore reproducible.
 - **Outputs**: nominal net worth & cumulative cost charts, MC percentile fan charts,

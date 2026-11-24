@@ -91,6 +91,37 @@ function allScenarios(): Record<string, ParamState> {
   }
 }
 
+// --- autosave (last session) -------------------------------------------------
+
+const LS_AUTOSAVE = 'buyvsrent.autosave';
+
+/** Persist the current state so the next visit restores it without re-entering. */
+export function autosaveState(s: ParamState): void {
+  try {
+    localStorage.setItem(LS_AUTOSAVE, encodeState(s));
+  } catch {
+    // storage full or blocked — ignore, autosave is best-effort
+  }
+}
+
+/** Restore the last session's state, or null if there is none. */
+export function loadAutosave(): ParamState | null {
+  try {
+    const raw = localStorage.getItem(LS_AUTOSAVE);
+    return raw ? decodeState(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAutosave(): void {
+  try {
+    localStorage.removeItem(LS_AUTOSAVE);
+  } catch {
+    // ignore
+  }
+}
+
 // --- presets ------------------------------------------------------------------
 
 export interface Preset {
