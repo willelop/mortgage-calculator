@@ -21,17 +21,18 @@ const COLORS = {
 
 export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element | null {
   const [realTerms, setRealTerms] = React.useState(false);
+
+  /** deflate a value at year index i when real terms are selected */
+  const deflate = React.useCallback(
+    (v: number, i: number) => (realTerms ? v / Math.pow(1 + inflationPct / 100, i) : v),
+    [realTerms, inflationPct],
+  );
+
   if (!nominal) return null;
   const H = nominal.horizon;
   const inf = inflationPct / 100;
 
   const termsNote = realTerms ? `real terms (today's €, ${fmtPct(inf)} p.a.)` : 'nominal terms';
-
-  /** deflate a value at year index i when real terms are selected */
-  const deflate = React.useCallback(
-    (v: number, i: number) => (realTerms ? v / Math.pow(1 + inf, i) : v),
-    [realTerms, inf],
-  );
 
   const nwBuyShown = nominal.nwBuy.map(deflate);
   const nwRentShown = nominal.nwRent.map(deflate);
