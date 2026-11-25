@@ -4,23 +4,39 @@
  * Complements app-smoke (which mounts the whole App) by testing the
  * settings interactions directly.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import React, { useState } from 'react';
 import { cleanup, fireEvent, getByTestId, render, screen, within } from '@testing-library/react';
+import { MantineProvider } from '@mantine/core';
 import { ParamForm } from '../ParamForm';
 import { OptionsMenu } from '../OptionsMenu';
 import { defaultState, ParamState } from '../../engine/params';
 
 afterEach(cleanup);
 
+// jsdom lacks window.matchMedia (needed by Mantine's color-scheme manager)
+beforeAll(() => {
+  if (!window.matchMedia) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (q: string) => ({
+        matches: false, media: q, onchange: null,
+        addListener() {}, removeListener() {},
+        addEventListener() {}, removeEventListener() {},
+        dispatchEvent: () => false,
+      }),
+    });
+  }
+});
+
 /** Wraps ParamForm + OptionsMenu over one shared ParamState, like App does. */
 function Harness({ initial, onState }: { initial: ParamState; onState?: (s: ParamState) => void }) {
   const [state, setState] = useState(initial);
   return (
-    <>
+    <MantineProvider>
       <ParamForm state={state} onChange={(s) => { setState(s); onState?.(s); }} />
       <OptionsMenu state={state} onChange={(s) => { setState(s); onState?.(s); }} />
-    </>
+    </MantineProvider>
   );
 }
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Popover, Checkbox, Button } from '@mantine/core';
 import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, iconOf, ParamDef, ParamState } from '../engine/params';
 
 /** parameter groups shown on the main form (correlations have no on/off) */
@@ -36,46 +37,49 @@ export function OptionsMenu({ state, onChange }: Props): JSX.Element {
 
   return (
     <div className="opt-menu">
-      <button
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        title="Enable or disable features"
-      >
-        ⚙️ Options (
-        {defs.filter((d) => isEnabled(d)).length}/{defs.length})
-      </button>
-      {open && (
-        <>
-          <div className="opt-backdrop" onClick={() => setOpen(false)} />
-          <div className="opt-panel" role="menu">
-            {MAIN_GROUPS.map((g) => {
-              const gdefs = defs.filter((d) => d.group === g);
-              if (gdefs.length === 0) return null;
-              return (
-                <div key={g} className="opt-group">
-                  <h3>{GROUP_LABELS[g]}</h3>
-                  {gdefs.map((d) => (
-                    <label key={d.key} className="opt-item">
-                      <input
-                        type="checkbox"
-                        className="toggle"
-                        checked={isEnabled(d)}
-                        onChange={(e) => toggle(d, e.target.checked)}
-                        aria-label={d.kind === 'switch' ? d.label : `Enable ${d.label}`}
-                      />
-                      <span className="icon" aria-hidden>{iconOf(d.key)}</span>
-                      <span className="text">{d.label}</span>
-                      {d.help && <HelpTip text={d.help} />}
-                      <span className="unit">{isEnabled(d) ? 'on' : 'off'}</span>
-                    </label>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+      <Popover width={450} position="bottom-end" withinPortal={false} trapFocus={false}>
+        <Popover.Target>
+          <Button
+            variant="default"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-haspopup="menu"
+            title="Enable or disable features"
+          >
+            ⚙️ Options ({defs.filter((d) => isEnabled(d)).length}/{defs.length})
+          </Button>
+        </Popover.Target>
+        {open && (
+          <>
+            <div className="opt-backdrop" onClick={() => setOpen(false)} />
+            <Popover.Dropdown className="opt-panel" role="menu">
+              {MAIN_GROUPS.map((g) => {
+                const gdefs = defs.filter((d) => d.group === g);
+                if (gdefs.length === 0) return null;
+                return (
+                  <div key={g} className="opt-group">
+                    <h3>{GROUP_LABELS[g]}</h3>
+                    {gdefs.map((d) => (
+                      <label key={d.key} className="opt-item">
+                        <Checkbox
+                          className="toggle"
+                          checked={isEnabled(d)}
+                          onChange={(e) => toggle(d, e.currentTarget.checked)}
+                          aria-label={d.kind === 'switch' ? d.label : `Enable ${d.label}`}
+                        />
+                        <span className="icon" aria-hidden>{iconOf(d.key)}</span>
+                        <span className="text">{d.label}</span>
+                        {d.help && <HelpTip text={d.help} />}
+                        <span className="unit">{isEnabled(d) ? 'on' : 'off'}</span>
+                      </label>
+                    ))}
+                  </div>
+                );
+              })}
+            </Popover.Dropdown>
+          </>
+        )}
+      </Popover>
     </div>
   );
 }

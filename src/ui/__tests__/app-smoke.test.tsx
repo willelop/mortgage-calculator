@@ -16,10 +16,30 @@ afterEach(cleanup);
 afterAll(() => { vi.restoreAllMocks(); });
 
 // Plotly's module init needs APIs jsdom lacks; stub the URL blob layer.
+// Mantine needs window.matchMedia (color scheme) and ResizeObserver (indicators).
 beforeAll(() => {
   if (!window.URL.createObjectURL) {
     (window.URL as unknown as Record<string, unknown>).createObjectURL = vi.fn(() => 'blob:mock');
     (window.URL as unknown as Record<string, unknown>).revokeObjectURL = vi.fn();
+  }
+  if (!window.matchMedia) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: (q: string) => ({
+        matches: false, media: q, onchange: null,
+        addListener() {}, removeListener() {},
+        addEventListener() {}, removeEventListener() {},
+        dispatchEvent: () => false,
+      }),
+    });
+  }
+  if (!window.ResizeObserver) {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    window.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
   }
 });
 

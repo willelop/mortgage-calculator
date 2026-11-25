@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MantineProvider, Button, ActionIcon, SegmentedControl, NumberInput } from '@mantine/core';
+import { mantineTheme } from './ui/mantine-theme';
 import { ParamState, defaultState, switchOn, num } from './engine/params';
 import { runScenario, ScenarioResult, loanAmountFor } from './engine/simulate';
 import { ltvSurchargePct } from './engine/mortgage';
@@ -234,6 +236,7 @@ export default function App(): JSX.Element {
   }, [mainTab]);
 
   return (
+    <MantineProvider theme={mantineTheme} forceColorScheme={theme}>
     <div className="app">
       <header>
         <div className="brand">
@@ -246,14 +249,16 @@ export default function App(): JSX.Element {
           </div>
         </div>
         <div className="toolbar">
-          <button
-            className="icon-btn"
+          <ActionIcon
+            variant="default"
+            size="lg"
+            radius="xl"
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             aria-label="Toggle dark mode"
           >
             {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          </ActionIcon>
           <label>
             Preset
             <select value={preset} onChange={(e) => applyPresetByName(e.target.value)}>
@@ -268,19 +273,16 @@ export default function App(): JSX.Element {
               </optgroup>
             </select>
           </label>
-          <button onClick={share}>🔗 Share link</button>
-          <button onClick={saveScenario}>💾 Save</button>
-          <button
-            className="danger"
-            onClick={() => {
+          <Button variant="default" onClick={share}>🔗 Share link</Button>
+          <Button variant="default" onClick={saveScenario}>💾 Save</Button>
+          <Button variant="light" color="red" onClick={() => {
               localStorageNames().forEach(localStorageDelete);
-            }}
-          >
+            }}>
             🗑 Clear saved
-          </button>
-          <button onClick={() => setState(defaultState())}>↺ Reset to defaults</button>
+          </Button>
+          <Button variant="default" onClick={() => setState(defaultState())}>↺ Reset to defaults</Button>
           <OptionsMenu state={state} onChange={setState} />
-          <button onClick={() => window.print()}>🖨 Print / PDF</button>
+          <Button variant="default" onClick={() => window.print()}>🖨 Print / PDF</Button>
         </div>
         {toast && <div className="toast">{toast}</div>}
       </header>
@@ -313,63 +315,54 @@ export default function App(): JSX.Element {
       <div className="runs-bar">
         <div className="run-group">
           <span className="run-group-label">Deterministic scenario</span>
-          <button className="primary" onClick={runNominal} disabled={running !== null}>
+          <Button variant="filled" color="brand" onClick={runNominal} disabled={running !== null}>
             {running === 'nominal' ? 'Running…' : '▶ Run'}
-          </button>
+          </Button>
           <span className="hint">one pass with your exact inputs</span>
         </div>
         <div className="run-group">
           <span className="run-group-label">🎲 Monte Carlo</span>
-          <label className="seed" title="Number of Monte Carlo runs">
-            runs
-            <input
-              type="number"
-              min={100}
-              max={10000}
-              step={100}
-              value={mcRuns}
-              onChange={(e) => setMcRuns(Math.max(100, Math.min(10000, parseInt(e.target.value || '1000', 10))))}
-            />
-          </label>
-          <label className="seed">
-            seed
-            <input
-              type="number"
-              value={seed}
-              onChange={(e) => setSeed(parseInt(e.target.value || '42', 10))}
-            />
-          </label>
+          <NumberInput
+            w={110}
+            size="xs"
+            min={100}
+            max={10000}
+            step={100}
+            value={mcRuns}
+            aria-label="Number of Monte Carlo runs"
+            onChange={(v) => setMcRuns(Math.max(100, Math.min(10000, Number(v) || 1000)))}
+          />
+          <NumberInput
+            w={110}
+            size="xs"
+            value={seed}
+            aria-label="Random seed"
+            onChange={(v) => setSeed(Number(v) || 42)}
+          />
           <span className="hint">{enrolledCount} parameter(s) enrolled</span>
-          <button className="primary" onClick={runMc} disabled={running !== null}>
+          <Button variant="filled" color="brand" onClick={runMc} disabled={running !== null}>
             {running === 'mc'
               ? `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`
               : '▶ Run'}
-          </button>
+          </Button>
           {running === 'mc' && (
-            <button className="danger" onClick={cancelMc}>
+            <Button variant="light" color="red" onClick={cancelMc}>
               ✕ Cancel
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="form-tabs main-tabs" role="tablist" aria-label="Main area">
-        <button
-          role="tab"
-          aria-selected={mainTab === 'inputs'}
-          className={mainTab === 'inputs' ? 'tab active' : 'tab'}
-          onClick={() => setMainTab('inputs')}
-        >
-          ✏️ Inputs
-        </button>
-        <button
-          role="tab"
-          aria-selected={mainTab === 'results'}
-          className={mainTab === 'results' ? 'tab active' : 'tab'}
-          onClick={() => setMainTab('results')}
-        >
-          📊 Results
-        </button>
+      <div className="main-tabs">
+        <SegmentedControl
+          aria-label="Main area"
+          value={mainTab}
+          onChange={(v) => setMainTab(v as 'inputs' | 'results')}
+          data={[
+            { value: 'inputs', label: '✏️ Inputs' },
+            { value: 'results', label: '📊 Results' },
+          ]}
+        />
       </div>
 
       <main className={`grid ${mainTab === 'inputs' ? 'inputs-only' : 'results-only'}`}>
@@ -395,5 +388,6 @@ export default function App(): JSX.Element {
         <span>100 % client-side, generated with AI (Mistral Vibe) — GitHub Pages-ready. No data leaves your browser.</span>
       </footer>
     </div>
+    </MantineProvider>
   );
 }
