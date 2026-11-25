@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** Inline SVG logo: house with a rising net-worth line (ledger/ink style). */
+/** Inline SVG logo: house with a rising net-worth line (soft, modern). */
 export function Logo({ size = 44 }: { size?: number }): JSX.Element {
   return (
     <svg
@@ -11,14 +11,19 @@ export function Logo({ size = 44 }: { size?: number }): JSX.Element {
       role="img"
       aria-label="Buy vs Rent logo"
     >
-      {/* roof — follows the theme ink color */}
-      <path d="M6 30 L32 8 L58 30" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="square" strokeLinejoin="miter" />
-      {/* walls */}
-      <path d="M14 30 v26 h36 v-26" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
-      {/* rising line chart inside — vermillion accent */}
-      <path d="M20 48 C26 46 27 42 31 40 C35 38 36 33 44 30" fill="none" stroke="#cc3f00" strokeWidth="4" strokeLinecap="square" />
-      {/* vermillion dot doubles as a ledger correction mark */}
-      <rect x="40.6" y="26.6" width="6.8" height="6.8" fill="#cc3f00" />
+      <defs>
+        <linearGradient id="logo-roof" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2f9e6b" />
+          <stop offset="100%" stopColor="#1f744b" />
+        </linearGradient>
+      </defs>
+      {/* roof */}
+      <path d="M6 30 L32 8 L58 30" fill="none" stroke="url(#logo-roof)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* walls — currentColor follows the theme text color */}
+      <path d="M14 30 v26 h36 v-26" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* rising line chart inside */}
+      <path d="M20 48 C26 46 27 42 31 40 C35 38 36 33 44 30" fill="none" stroke="#c2701d" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="44" cy="30" r="3.4" fill="#c2701d" />
     </svg>
   );
 }

@@ -1,32 +1,33 @@
 import { MantineThemeOverride } from '@mantine/core';
 
 /**
- * Mantine theme: "Kontrollblatt" design — Swiss-ledger print look.
- * Square corners, vermillion actions, ink as the framing color,
- * serif display headings. Pairs with the tokens in src/styles.css.
+ * Mantine theme: "Modern sleek" — neutral, restrained, precise.
+ * One emerald accent, hairline borders, small radii, quiet shadows.
+ * Pairs with the tokens in src/styles.css.
  */
 export const mantineTheme: MantineThemeOverride = {
   colors: {
     brand: [
-      '#fbeadd',
-      '#f5cfae',
-      '#efb183',
-      '#e8915c',
-      '#e07648',
-      '#d85f38',
-      '#d14a19',
-      '#cc3f00',
-      '#b23700',
-      '#8f2c00',
+      '#e6f4ee',
+      '#c2e2d3',
+      '#9ccfb7',
+      '#77bb9a',
+      '#54a97f',
+      '#3c986c',
+      '#2f8d61',
+      '#278357',
+      '#1f744b',
+      '#175c3b',
     ],
   },
   primaryColor: 'brand',
-  primaryShade: 7,
-  defaultRadius: 0,
-  radius: { xs: '0', sm: '0', md: '0', lg: '0', xl: '0' },
+  primaryShade: 8,
+  defaultRadius: 'md',
+  radius: { xs: '4px', sm: '6px', md: '8px', lg: '12px', xl: '16px' },
   fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
   headings: {
-    fontFamily: "'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif",
-    fontWeight: '700',
+    fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+    fontWeight: '600',
   },
+  defaultGradient: { from: '#2f8d61', to: '#1f744b', deg: 180 },
 };
