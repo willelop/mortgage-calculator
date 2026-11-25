@@ -332,7 +332,7 @@ export default function App(): JSX.Element {
 
       <main className="grid">
         <div className="col-params">
-          <ParamForm state={state} onChange={setState} />
+          <ParamForm state={state} onChange={setState} mc={mc} />
         </div>
         <div className="col-results">
           <Results nominal={nominal} mc={mc} sens={sens} inflationPct={num(state, 'inflation')} />

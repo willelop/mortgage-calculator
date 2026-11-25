@@ -330,8 +330,8 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
   const exportAmortCsv = () =>
     downloadCsv(
       'amortization.csv',
-      ['Year', 'Payment EUR', 'Interest EUR', 'Amortization EUR', 'Sondertilgung EUR', 'Balance year-end EUR'],
-      rows.map((r) => [r.year, r.payment.toFixed(2), r.interest.toFixed(2), r.principal.toFixed(2), r.sondertilgung.toFixed(2), r.balanceEnd.toFixed(2)]),
+      ['Year', 'Annual payment EUR', 'Monthly rate EUR', 'Interest EUR', 'Amortization EUR', 'Sondertilgung EUR', 'Balance year-end EUR'],
+      rows.map((r) => [r.year, r.payment.toFixed(2), (r.payment / 12).toFixed(2), r.interest.toFixed(2), r.principal.toFixed(2), r.sondertilgung.toFixed(2), r.balanceEnd.toFixed(2)]),
     );
 
   const exportAllCsv = () =>
@@ -400,32 +400,37 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
           hovermode: 'x',
         }}
       />
-      <div className="amort-table-wrap">
-        <table className="amort-table">
-          <thead>
-            <tr>
-              <th>Year</th>
-              <th>Payment</th>
-              <th>Interest</th>
-              <th>Amortization</th>
-              <th>Sondertilgung</th>
-              <th>Balance (end of year)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.year}>
-                <td>{r.year}</td>
-                <td>{fmtEur(r.payment)}</td>
-                <td className="amort-neg">{fmtEur(r.interest)}</td>
-                <td className="amort-pos">{fmtEur(r.principal)}</td>
-                <td className="amort-sonder">{fmtEur(r.sondertilgung)}</td>
-                <td>{fmtEur(r.balanceEnd)}</td>
+      <details className="amort-details">
+        <summary>📅 Show monthly rates & yearly detail table ({rows.length} rows)</summary>
+        <div className="amort-table-wrap">
+          <table className="amort-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th title="Monthly mortgage rate ≈ annual payment / 12">Monthly rate</th>
+                <th>Payment</th>
+                <th>Interest</th>
+                <th>Amortization</th>
+                <th>Sondertilgung</th>
+                <th>Balance (end of year)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.year}>
+                  <td>{r.year}</td>
+                  <td>{r.payment > 0.005 ? `${fmtEur(r.payment / 12)}/mo` : '—'}</td>
+                  <td>{fmtEur(r.payment)}</td>
+                  <td className="amort-neg">{fmtEur(r.interest)}</td>
+                  <td className="amort-pos">{fmtEur(r.principal)}</td>
+                  <td className="amort-sonder">{fmtEur(r.sondertilgung)}</td>
+                  <td>{fmtEur(r.balanceEnd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
   );
 }
