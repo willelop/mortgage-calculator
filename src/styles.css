@@ -161,6 +161,8 @@ button.icon-btn {
   border-radius: 10px;
   background: var(--box-bg);
 }
+.param-box.off { opacity: 0.55; }
+.param-box.off .icon { filter: grayscale(1); }
 
 .param-main {
   display: flex;

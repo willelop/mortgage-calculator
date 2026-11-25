@@ -39,17 +39,15 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
   const toggleGroup = (g: string) =>
     setOpenGroups((prev) => ({ ...prev, [g]: !prev[g] }));
 
-  const visible = (d: ParamDef) =>
-    (!d.visibleWhen || d.visibleWhen(state.values)) &&
-    (d.toggleable === false || d.kind === 'switch' || isOn(d));
+  const visible = (d: ParamDef) => !d.visibleWhen || d.visibleWhen(state.values);
   const isOn = (d: ParamDef) =>
     d.kind === 'switch' ? state.values[d.key] !== 0 : state.on[d.key] ?? d.defaultOn ?? true;
 
   return (
     <div className="param-form">
       <p className="muted tab-hint">
-        The <strong>groups below hold the values</strong> — disabled features are
-        hidden, and you switch features on or off in the <strong>⚙️ Options</strong> menu
+        The <strong>groups below hold the values</strong> — a disabled feature is
+        dimmed, and you switch features on or off in the <strong>⚙️ Options</strong> menu
         in the top bar. Under <strong>Monte Carlo</strong> you choose which values are
         simulated randomly.
       </p>
@@ -65,7 +63,7 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
             onToggle={() => toggleGroup(g)}
           >
             {defs.map((d) => (
-              <ValueBox key={d.key} def={d} state={state} set={set} />
+              <ValueBox key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
             ))}
           </Accordion>
         );
@@ -81,7 +79,7 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
         onToggle={() => toggleGroup('mc')}
       >
         {PARAM_DEFS.filter((d) => d.group === 'correlations' && visible(d)).map((d) => (
-          <ValueBox key={d.key} def={d} state={state} set={set} />
+          <ValueBox key={d.key} def={d} state={state} set={set} isOn={true} />
         ))}
         {MAIN_GROUPS.map((g) =>
           PARAM_DEFS.filter((d) => d.group === g && d.mcable && visible(d)).map((d) => (
@@ -122,18 +120,21 @@ function Accordion({
   );
 }
 
-/** Parameter box: just the value. Disabled features are not rendered at all. */
+/** Parameter box: just the value (dimmed while its feature is disabled). */
 function ValueBox({
   def,
   state,
   set,
+  isOn,
 }: {
   def: ParamDef;
   state: ParamState;
   set: Setter;
+  isOn: boolean;
 }): JSX.Element {
+  const cls = ['param-box', !isOn ? 'off' : ''].join(' ');
   return (
-    <div className="param-box">
+    <div className={cls}>
       <div className="param-main">
         <div className="param-label">
           <span className="icon" aria-hidden>{iconOf(def.key)}</span>
