@@ -18,6 +18,15 @@ const DIST_LABELS: Record<Dist, string> = {
 /** parameter groups shown on the main form (correlations live in Monte Carlo) */
 const MAIN_GROUPS: Group[] = GROUP_ORDER.filter((g) => g !== 'correlations');
 
+/** label of the Monte-Carlo section, kept out of Group for tab typing */
+type Section = Group | 'mc';
+const SECTIONS: Section[] = [...MAIN_GROUPS, 'mc'];
+
+const TAB_TITLES: Record<Section, string> = {
+  ...GROUP_LABELS,
+  mc: 'Monte Carlo',
+};
+
 export function ParamForm({ state, onChange }: Props): JSX.Element {
   const set: Setter = (key, patch) => {
     const next: ParamState = {
@@ -31,92 +40,75 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
     onChange(next);
   };
 
-  // accordion state per section; the two headline groups start expanded
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    [MAIN_GROUPS[0]]: true,
-    [MAIN_GROUPS[1]]: true,
-  });
-  const toggleGroup = (g: string) =>
-    setOpenGroups((prev) => ({ ...prev, [g]: !prev[g] }));
+  const [tab, setTab] = useState<Section>(MAIN_GROUPS[0]);
 
   const visible = (d: ParamDef) => !d.visibleWhen || d.visibleWhen(state.values);
   const isOn = (d: ParamDef) =>
     d.kind === 'switch' ? state.values[d.key] !== 0 : state.on[d.key] ?? d.defaultOn ?? true;
 
-  return (
-    <div className="param-form">
-      <p className="muted tab-hint">
-        The <strong>groups below hold the values</strong> — a disabled feature is
-        dimmed, and you switch features on or off in the <strong>⚙️ Options</strong> menu
-        in the top bar. Under <strong>Monte Carlo</strong> you choose which values are
-        simulated randomly.
-      </p>
+  const groupDefs = (g: Group) =>
+    PARAM_DEFS.filter((d) => d.group === g && d.kind !== 'switch' && visible(d));
+  const mcDefs = () =>
+    MAIN_GROUPS.flatMap((g) =>
+      PARAM_DEFS.filter((d) => d.group === g && d.mcable && visible(d)),
+    );
+  const enrolled = () => mcDefs().filter((d) => state.mc[d.key]?.enabled ?? false).length;
 
-      {MAIN_GROUPS.map((g) => {
-        const defs = PARAM_DEFS.filter((d) => d.group === g && d.kind !== 'switch' && visible(d));
-        return (
-          <Accordion
-            key={g}
-            title={GROUP_LABELS[g]}
-            count={defs.length}
-            open={!!openGroups[g]}
-            onToggle={() => toggleGroup(g)}
-          >
-            {defs.map((d) => (
-              <ValueBox key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
-            ))}
-          </Accordion>
-        );
-      })}
+  const countOf = (s: Section) =>
+    s === 'mc' ? enrolled() : groupDefs(s).length;
 
-      <Accordion
-        title="Monte Carlo"
-        subtitle="which values are random"
-        count={
-          PARAM_DEFS.filter((d) => d.mcable && visible(d) && (state.mc[d.key]?.enabled ?? false)).length
-        }
-        open={!!openGroups.mc}
-        onToggle={() => toggleGroup('mc')}
-      >
+  const sectionBody = (s: Section): JSX.Element =>
+    s === 'mc' ? (
+      <>
+        <p className="muted tab-hint">
+          Choose which values are simulated randomly. Each enrolled row takes its
+          nominal (median) value from the group tabs; below are the correlations
+          between the random shocks.
+        </p>
         {PARAM_DEFS.filter((d) => d.group === 'correlations' && visible(d)).map((d) => (
           <ValueBox key={d.key} def={d} state={state} set={set} isOn={true} />
         ))}
-        {MAIN_GROUPS.map((g) =>
-          PARAM_DEFS.filter((d) => d.group === g && d.mcable && visible(d)).map((d) => (
-            <McRow key={d.key} def={d} state={state} set={set} />
-          )),
-        )}
-      </Accordion>
-    </div>
-  );
-}
+        {mcDefs().map((d) => (
+          <McRow key={d.key} def={d} state={state} set={set} />
+        ))}
+      </>
+    ) : (
+      <>
+        {groupDefs(s).map((d) => (
+          <ValueBox key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
+        ))}
+      </>
+    );
 
-/** Collapsible `<details>` region; children only render when open. */
-function Accordion({
-  title,
-  subtitle,
-  count,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  count: number;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}): JSX.Element | null {
-  if (count === 0) return null;
   return (
-    <details className="group-acc" open={open}>
-      <summary onClick={(e) => { e.preventDefault(); onToggle(); }}>
-        {title}
-        {subtitle && <span className="subtitle">{subtitle}</span>}
-        <span className="count">({count})</span>
-      </summary>
-      {open && <div className="param-body">{children}</div>}
-    </details>
+    <div className="param-form">
+      <div className="form-tabs" role="tablist" aria-label="Parameter sections">
+        {SECTIONS.map((s) => (
+          <button
+            key={s}
+            role="tab"
+            aria-selected={tab === s}
+            className={tab === s ? 'tab active' : 'tab'}
+            onClick={() => setTab(s)}
+          >
+            {s === 'mc' ? '🎲 ' : ''}{TAB_TITLES[s]}
+            <span className="count">({countOf(s)})</span>
+          </button>
+        ))}
+      </div>
+
+      <p className="muted tab-hint">
+        The tabs hold the <strong>values</strong> — a disabled feature is dimmed, and you
+        switch features on or off in the <strong>⚙️ Options</strong> menu in the top bar.
+      </p>
+
+      {/* every panel stays mounted; inactive ones are hidden so state is never lost */}
+      {SECTIONS.map((s) => (
+        <div key={s} className="tab-body" role="tabpanel" hidden={tab !== s}>
+          {sectionBody(s)}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -172,7 +164,7 @@ function ValueBox({
   );
 }
 
-/** Monte-Carlo row: enroll checkbox; the nominal value comes from its group box. */
+/** Monte-Carlo row: enroll checkbox; the nominal value comes from its group tab. */
 function McRow({
   def,
   state,

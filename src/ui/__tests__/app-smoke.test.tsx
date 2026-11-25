@@ -23,17 +23,8 @@ beforeAll(() => {
   }
 });
 
-// The mobile-first UI puts parameters in collapsible groups; only the first is
-// expanded by default. Open every group so queries can reach all inputs.
-function openAllGroups(container: HTMLElement): void {
-  for (let i = 0; i < 8; i++) {
-    const closed = Array.from(
-      container.querySelectorAll('details.group-acc:not([open]) > summary'),
-    );
-    if (closed.length === 0) break;
-    closed.forEach((s) => fireEvent.click(s));
-  }
-}
+// All form panels stay mounted (inactive tabs are only hidden), so queries
+// reach every input without switching tabs.
 
 describe('App smoke', () => {
   it('renders parameters and nominal results without crashing', () => {
@@ -68,9 +59,8 @@ describe('autosave — values survive a reload', () => {
     const s = defaultState();
     s.values['property_price'] = 432_100;
     autosaveState(s);
-    const { container } = render(<App />);
+    render(<App />);
     expect(screen.getByText('Restored your last session.')).toBeTruthy();
-    openAllGroups(container);
     expect(screen.getByDisplayValue('432100')).toBeTruthy();
   });
 });
@@ -79,7 +69,6 @@ describe('repayment mode UI', () => {
   it('help tooltips ("?" marks) are present on parameter fields', () => {
     clearAutosave();
     const { container } = render(<App />);
-    openAllGroups(container);
     expect(container.querySelectorAll('.help-tip').length).toBeGreaterThan(20);
     expect(container.querySelector('.help-tooltip')).toBeTruthy();
   });
@@ -87,7 +76,6 @@ describe('repayment mode UI', () => {
   it('switching to "Monthly payment" swaps Anfangstilgung for the payment input', () => {
     clearAutosave();
     const { container } = render(<App />);
-    openAllGroups(container);
     // default mode: Anfangstilgung visible…
     expect(screen.getAllByText(/Initial amortization \(Anfangstilgung\)/).length).toBeGreaterThan(0);
     // …the mode select is the only param-kind select (MC dist selects hidden by default)
