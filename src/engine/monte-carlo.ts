@@ -174,15 +174,18 @@ export function runMonteCarlo(state: ParamState, opts: McOptions): McResult {
     const stocks: number[] = [];
     const property: number[] = [];
     const inflation: number[] = [];
+    const bonds: number[] = [];
     for (let y = 0; y < H; y++) {
       const zs = gaussian(rand);
       const ep = gaussian(rand);
       const ei = gaussian(rand);
+      const eb = gaussian(rand); // bonds: own independent shock (not the stock shock)
       stocks.push(zs);
       property.push(rhoSP * zs + ep * Math.sqrt(1 - rhoSP * rhoSP));
       inflation.push(rhoSI * zs + ei * Math.sqrt(1 - rhoSI * rhoSI));
+      bonds.push(eb);
     }
-    const shocks: YearlyShocks = { stocks, property, inflation };
+    const shocks: YearlyShocks = { stocks, property, inflation, bonds };
 
     // 3) run
     const res = runScenario(runningState, shocks);

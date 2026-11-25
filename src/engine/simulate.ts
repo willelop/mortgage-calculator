@@ -15,7 +15,8 @@
  *    - Pays rent + Nebenkosten; rent growth per parameter (or CPI-linked).
  *    - The monthly cost difference (own − rent) flows into / out of the
  *      portfolio (if 'invest freed cash flow' is enabled).
- *    - Kaution (3× cold rent) is held as a refundable asset.
+ *    - Kaution (3× cold rent) is held as a refundable asset; increases are
+ *      funded out of pocket each January (like the owner's maintenance).
  *    - Net worth = portfolio (after liquidation tax) + kaution.
  */
 
@@ -31,6 +32,9 @@ export interface YearlyShocks {
   stocks: number[];
   property: number[];
   inflation: number[];
+  /** per-year independent gaussian shock for bonds/savings; defaults to 0
+   *  (deterministic) when absent — intentionally *not* the stock shock */
+  bonds: number[];
 }
 
 export interface ScenarioResult {
@@ -161,7 +165,7 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const freedCash = sw('freed_cash_invested');
 
   // per-year scratch context shared with the month loop below
-  const yctx = { rentCostM: 0, recurringM: 0, rBlendM: 0, kaution: 0 };
+  const yctx = { rentCostM: 0, recurringM: 0, rBlendM: 0, kaution: kaution0 };
 
   /** Deposit or withdraw from a portfolio so the investor's pocket changes by d. */
   const flow = (p: Portfolio, d: number): void => {
@@ -192,6 +196,10 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   let cumBuy = 0;
   let cumRent = 0;
 
+  // cumulative index factors (correct compounding across shocked years)
+  let costIdx = 1;
+  let rentIdx = 1;
+
   // --- Monthly loop --------------------------------------------------------
   for (let m = 0; m < months; m++) {
     const y = Math.floor(m / 12);
@@ -203,6 +211,7 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
       const zs = shocks ? shocks.stocks[y] : 0;
       const zp = shocks ? shocks.property[y] : 0;
       const zi = shocks ? shocks.inflation[y] : 0;
+      const zb = shocks ? (shocks.bonds?.[y] ?? 0) : 0;
 
       const annualInfl = (1 + inflation) * shockFactor(sigmaInfl, zi) - 1;
       const propGrow = (1 + gApprec) * shockFactor(sigmaProp, zp) - 1;
@@ -212,16 +221,20 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
 
       propValue *= 1 + propGrow;
 
-      const costIdx = Math.pow(1 + annualInfl, y);
+      // Yearly cumulative index factors: costs and rent are indexed by the
+      // *product* of each year's grown factor, so a one-year shock moves only
+      // that year's level forward (not `pow(current rate, years passed)`).
+      costIdx *= 1 + annualInfl;
+      rentIdx *= 1 + annualRentGrow;
       // In the deterministic (no-shocks) run use raw expected values; in MC the
       // lognormal factor makes E[wealth growth] ≈ nominal expectation.
       const annualStockRet = (1 + muStocks) * shockFactor(sigmaStocks, zs) - 1;
-      const annualBondRet = (1 + muBonds) * shockFactor(sigmaBonds, zs) - 1;
+      const annualBondRet = (1 + muBonds) * shockFactor(sigmaBonds, zb) - 1;
       const rStocksM = Math.pow(1 + annualStockRet, 1 / 12) - 1;
       const rBondsM = Math.pow(1 + annualBondRet, 1 / 12) - 1;
       const rBlendM = wStocks * rStocksM + (1 - wStocks) * rBondsM;
 
-      const rentColdY = num(state, 'rent_cold') * Math.pow(1 + annualRentGrow, y);
+      const rentColdY = num(state, 'rent_cold') * rentIdx;
       const nebenkostenY = num(state, 'nebenkosten_monthly') * costIdx;
       const recurringMonthly =
         (num(state, 'grundsteuer_annual') * costIdx +
@@ -229,6 +242,15 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
           num(state, 'hausgeld_annual') * costIdx +
           (num(state, 'maintenance_rate') / 100) * price * costIdx) / 12;
       const kaution = 3 * rentColdY;
+
+      // Kaution top-up: when rent grows, the deposit must be topped up to
+      // 3× the new cold rent — funded out of pocket, exactly like the buy
+      // branch funds its lump-sum maintenance (and refunded if it shrinks).
+      const kautionDelta = kaution - yctx.kaution;
+      if (kautionDelta !== 0) {
+        cumRent += kautionDelta;
+        flow(rentPortfolio, -kautionDelta);
+      }
 
       // lump-sum maintenance event (roof, heating…) — paid by the owner
       const lumpYear = Math.round(num(state, 'maintenance_lump_year'));
