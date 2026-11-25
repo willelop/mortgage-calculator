@@ -222,33 +222,6 @@ button.icon-btn {
 .param-mc input[type='number'] { width: 95px; text-align: right; }
 .param-mc select { font-size: 0.8rem; padding: 3px 6px; }
 
-/* --- form tabs (Parameters / Features / Monte Carlo) ----------------------- */
-
-.form-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px;
-  background: var(--box-bg);
-}
-.form-tabs .tab {
-  flex: 1 1 0;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  padding: 8px 6px;
-  font-size: 0.85rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.form-tabs .tab.active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
-
 .tab-hint { margin: 0 0 10px; }
 
 /* --- collapsible parameter groups ----------------------------------------- */
@@ -282,31 +255,8 @@ button.icon-btn {
 .group-acc .count { color: var(--muted); font-weight: 400; font-size: 0.78rem; }
 .group-acc .param-body { padding: 4px 10px 10px; }
 
-/* --- Features tab option rows ---------------------------------------------- */
+/* --- inline enable toggle in the parameter label --------------------------- */
 
-.opt-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 6px;
-  background: var(--box-bg);
-  font-size: 0.88rem;
-}
-.opt-row.off { opacity: 0.6; }
-.opt-row .icon { flex: 0 0 auto; }
-.opt-row .text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.opt-row .opt-value {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 0 0 auto;
-}
-.opt-row .opt-value input[type='number'] { width: 95px; text-align: right; padding: 4px 6px; }
-.opt-row .unit { color: var(--muted); font-size: 0.75rem; }
-.opt-row input[type='checkbox'].toggle,
 .param-label input[type='checkbox'].toggle {
   width: 17px;
   height: 17px;
