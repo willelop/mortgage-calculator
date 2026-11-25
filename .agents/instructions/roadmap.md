@@ -31,5 +31,62 @@ Loaded via pointer from the root `AGENTS.md` for planning work.
 10. Split the monolithic `App.tsx` (state + warnings + toolbar) into smaller
     components if it keeps growing.
 
+**Model depth — German mortgage realism (domain features, roughly in order of
+being asked for / cheapest-first)**
+
+11. Repayment shapes beyond annuity: `Tilgungsfreijahre` (repayment-free
+    grace period, common with new builds), `endfälliges Darlehen` (bullet
+    repayment — relevant when pairing with Bauspar/KfW), linear amortization.
+    The engine's mortgage module is already year-stepped; each is a
+    `tilgung_shape` extension of the repayment derivation.
+12. `Disagio` (Abgeld): up-front discount paid from equity, effective vs
+    nominal rate display. Cheap: one parameter + a payment-loading change.
+13. Couple mode: second `Sparerpauschbetrag` (2 000 € instead of 1 000 €)
+    and, if asked for, combining two equity pools. The model intentionally
+    assumes one income and one pool — widen only with an explicit toggle.
+14. `Bereitstellungszinsen` (commitment interest on drawn-but-not-used loan
+    for staged new-build disbursement) — often 3 %+ on the undrawn part.
+15. Energy-related costs: the lump-sum maintenance event can model a GEG
+    (heating) retrofit already; make it first-class with an efficiency-class
+    parameter so the reserve and retrofit defaults differ (class G vs A/B).
+16. `Vorabpauschale` for buy-and-hold ETFs in `invest.ts` (currently skipped):
+    small annual prepayment tax on gains; matters for horizons > 10 y.
+
+**Robustness & engineering**
+
+17. React error boundary around the app: a render exception should show a
+    recoverable "Reload parameters" card — blank pages happened twice; this
+    makes the third one impossible to miss.
+18. Engine invariant tests (property-style): money conservation (rent branch
+    cash + invested == buy branch cash + property + invested up to the flows
+    under test), loan fully amortizes by term end whenever amortization > 0,
+    no negative reserves. These catch whole classes that example tests miss.
+19. CI hardening: separate test job from the deploy job (failed test must
+    never deploy), `concurrency` to cancel superseded runs, cache `node_modules`.
+20. Share links compress state (URL currently grows with every parameter —
+    deflate + base64 when it exceeds ~1 500 chars, with a graceful fallback).
+
+**UX polish**
+
+21. Preset library: city/land-specific presets (Munich vs Leipzig economics,
+    the `Grunderwerbsteuer` rate differs by Bundesland) with a short "why" in
+    the preset list.
+22. Printable one-page "Entscheidungsvorlage": the headline numbers, the
+    decision, and the top sensitivities — the print CSS exists, add a layout
+    that deserves it.
+23. Number inputs get unit-aware steppers/sliders (value + slider pairs) for
+    the few headline inputs (price, equity, rate) in the Global/Purchase tabs.
+
+**Explicit non-goals (do not implement; they would break the product promise)**
+
+- No backend, accounts, or telemetry/analytics — everything stays in the
+  browser.
+- No "you should buy" recommendation: the app presents scenarios and leaves
+  the decision to the user (the not-financial-advice disclaimer exists for
+  this).
+- No foreign-market tax models: the engine is German-law specific by design
+  (Abgeltungsteuer, § 23 EStG, Grunderwerbsteuer) — generalize only if the
+  tax model becomes parameterized, never by special-casing.
+
 Audit this roadmap whenever you complete or invalidate an item; keep it honest
 instead of aspirational.
