@@ -15,6 +15,9 @@ const DIST_LABELS: Record<Dist, string> = {
   triangular: 'Triangular',
 };
 
+/** parameter groups shown on the main form (correlations live in Monte Carlo) */
+const MAIN_GROUPS: Group[] = GROUP_ORDER.filter((g) => g !== 'correlations');
+
 export function ParamForm({ state, onChange }: Props): JSX.Element {
   const set: Setter = (key, patch) => {
     const next: ParamState = {
@@ -28,123 +31,131 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
     onChange(next);
   };
 
-  // accordion state per group; the two headline groups (global + purchase)
-  // start expanded, the rest collapsed — keeps the mobile page short
+  // accordion state per section; the two headline groups start expanded
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    [GROUP_ORDER[0]]: true,
-    [GROUP_ORDER[1]]: true,
+    [MAIN_GROUPS[0]]: true,
+    [MAIN_GROUPS[1]]: true,
   });
   const toggleGroup = (g: string) =>
     setOpenGroups((prev) => ({ ...prev, [g]: !prev[g] }));
 
+  const visible = (d: ParamDef) => !d.visibleWhen || d.visibleWhen(state.values);
+  const isOn = (d: ParamDef) =>
+    d.kind === 'switch' ? state.values[d.key] !== 0 : state.on[d.key] ?? d.defaultOn ?? true;
+
   return (
     <div className="param-form">
       <p className="muted tab-hint">
-        Each feature is configured right in its box: the tick enables it, the
-        <strong> MC</strong> chip enrolls the value into the Monte-Carlo
-        simulation (the entered value then acts as the median).
+        Everything has its own place: the <strong>groups below hold the values</strong>
+        {' '}a disabled feature is dimmed — switch it on under <strong>Options</strong>.
+        Under <strong>Monte Carlo</strong> you choose which values are simulated randomly.
       </p>
-      {GROUP_ORDER.map((g) => (
-        <GroupAccordion
-          key={g}
-          group={g}
-          state={state}
-          open={!!openGroups[g]}
-          onToggle={() => toggleGroup(g)}
-          set={set}
-        />
-      ))}
+
+      {MAIN_GROUPS.map((g) => {
+        const defs = PARAM_DEFS.filter((d) => d.group === g && d.kind !== 'switch' && visible(d));
+        return (
+          <Accordion
+            key={g}
+            title={GROUP_LABELS[g]}
+            count={defs.length}
+            open={!!openGroups[g]}
+            onToggle={() => toggleGroup(g)}
+          >
+            {defs.map((d) => (
+              <ValueBox key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
+            ))}
+          </Accordion>
+        );
+      })}
+
+      <Accordion
+        title="Options"
+        subtitle="enable or disable features"
+        count={PARAM_DEFS.filter((d) => MAIN_GROUPS.includes(d.group) && (d.toggleable !== false || d.kind === 'switch') && visible(d)).length}
+        open={!!openGroups.options}
+        onToggle={() => toggleGroup('options')}
+      >
+        {MAIN_GROUPS.map((g) =>
+          PARAM_DEFS.filter((d) => d.group === g && (d.toggleable !== false || d.kind === 'switch') && visible(d)).map((d) => (
+            <OptionRow key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
+          )),
+        )}
+      </Accordion>
+
+      <Accordion
+        title="Monte Carlo"
+        subtitle="which values are random"
+        count={
+          PARAM_DEFS.filter((d) => d.mcable && visible(d) && (state.mc[d.key]?.enabled ?? false)).length
+        }
+        open={!!openGroups.mc}
+        onToggle={() => toggleGroup('mc')}
+      >
+        {PARAM_DEFS.filter((d) => d.group === 'correlations' && visible(d)).map((d) => (
+          <ValueBox key={d.key} def={d} state={state} set={set} isOn={true} />
+        ))}
+        {MAIN_GROUPS.map((g) =>
+          PARAM_DEFS.filter((d) => d.group === g && d.mcable && visible(d)).map((d) => (
+            <McRow key={d.key} def={d} state={state} set={set} />
+          )),
+        )}
+      </Accordion>
     </div>
   );
 }
 
 /** Collapsible `<details>` region; children only render when open. */
-function GroupAccordion({
-  group,
-  state,
+function Accordion({
+  title,
+  subtitle,
+  count,
   open,
   onToggle,
-  set,
+  children,
 }: {
-  group: Group;
-  state: ParamState;
+  title: string;
+  subtitle?: string;
+  count: number;
   open: boolean;
   onToggle: () => void;
-  set: Setter;
+  children: React.ReactNode;
 }): JSX.Element | null {
-  const defs = PARAM_DEFS.filter(
-    (d) => d.group === group && (!d.visibleWhen || d.visibleWhen(state.values)),
-  );
-  if (defs.length === 0) return null;
+  if (count === 0) return null;
   return (
     <details className="group-acc" open={open}>
       <summary onClick={(e) => { e.preventDefault(); onToggle(); }}>
-        {GROUP_LABELS[group]}
-        <span className="count">({defs.length})</span>
+        {title}
+        {subtitle && <span className="subtitle">{subtitle}</span>}
+        <span className="count">({count})</span>
       </summary>
-      {open && (
-        <div className="param-body">
-          {defs.map((d) => (
-            <ParamBox key={d.key} def={d} state={state} set={set} />
-          ))}
-        </div>
-      )}
+      {open && <div className="param-body">{children}</div>}
     </details>
   );
 }
 
-/**
- * One box per parameter — everything about it lives here:
- * enable toggle (optional features), value, help tooltip and the
- * "MC" chip that expands the distribution settings in place.
- */
-function ParamBox({
+/** Parameter box: just the value (dimmed while its feature is disabled). */
+function ValueBox({
   def,
   state,
   set,
+  isOn,
 }: {
   def: ParamDef;
   state: ParamState;
   set: Setter;
+  isOn: boolean;
 }): JSX.Element {
-  const toggleable = def.toggleable !== false;
-  const isOn = toggleable ? state.on[def.key] ?? def.defaultOn ?? true : true;
-  const spec = state.mc[def.key];
-  const mcOn = def.mcable && (spec?.enabled ?? false);
-  const cls = [
-    'param-box',
-    !isOn ? 'off' : '',
-    mcOn ? 'mc-on' : '',
-  ].join(' ');
-
+  const cls = ['param-box', !isOn ? 'off' : ''].join(' ');
   return (
     <div className={cls}>
       <div className="param-main">
         <div className="param-label">
-          {toggleable && (
-            <input
-              type="checkbox"
-              className="toggle"
-              checked={isOn}
-              onChange={(e) => set(def.key, { on: e.target.checked })}
-              aria-label={`Enable ${def.label}`}
-            />
-          )}
           <span className="icon" aria-hidden>{iconOf(def.key)}</span>
           <span className="text">{def.label}</span>
           {def.help && <HelpTip text={def.help} />}
         </div>
         <div className="param-input">
-          {def.kind === 'switch' ? (
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={state.values[def.key] !== 0}
-                onChange={(e) => set(def.key, { value: e.target.checked ? 1 : 0 })}
-              />
-              <span className="unit">{state.values[def.key] !== 0 ? 'on' : 'off'}</span>
-            </label>
-          ) : def.kind === 'select' ? (
+          {def.kind === 'select' ? (
             <select
               value={state.values[def.key]}
               onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
@@ -168,19 +179,84 @@ function ParamBox({
               <span className="unit">{unitOf(def.kind)}</span>
             </>
           )}
-          {def.mcable && spec && (
-            <label className="mc-toggle" title="Include this parameter in the Monte Carlo simulation with the range below">
-              <input
-                type="checkbox"
-                checked={spec.enabled}
-                onChange={(e) => set(def.key, { mc: { ...spec, enabled: e.target.checked } })}
-              />{' '}
-              MC
-            </label>
-          )}
         </div>
       </div>
+    </div>
+  );
+}
 
+/** Options row: the enable/switch control only — values live in the groups. */
+function OptionRow({
+  def,
+  state,
+  set,
+  isOn,
+}: {
+  def: ParamDef;
+  state: ParamState;
+  set: Setter;
+  isOn: boolean;
+}): JSX.Element {
+  const toggle = (checked: boolean) => {
+    if (def.kind === 'switch') set(def.key, { value: checked ? 1 : 0 });
+    else set(def.key, { on: checked });
+  };
+
+  return (
+    <div className="param-box">
+      <div className="param-main">
+        <div className="param-label">
+          <input
+            type="checkbox"
+            className="toggle"
+            checked={isOn}
+            onChange={(e) => toggle(e.target.checked)}
+            aria-label={def.kind === 'switch' ? def.label : `Enable ${def.label}`}
+          />
+          <span className="icon" aria-hidden>{iconOf(def.key)}</span>
+          <span className="text">{def.label}</span>
+          {def.help && <HelpTip text={def.help} />}
+        </div>
+        <div className="param-input">
+          <span className="unit">{isOn ? 'on' : 'off'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Monte-Carlo row: enroll checkbox; the nominal value comes from its group box. */
+function McRow({
+  def,
+  state,
+  set,
+}: {
+  def: ParamDef;
+  state: ParamState;
+  set: Setter;
+}): JSX.Element {
+  const spec = state.mc[def.key];
+  const mcOn = spec?.enabled ?? false;
+  const cls = ['param-box', mcOn ? 'mc-on' : ''].join(' ');
+  return (
+    <div className={cls}>
+      <div className="param-main">
+        <div className="param-label">
+          <input
+            type="checkbox"
+            className="toggle"
+            checked={mcOn}
+            onChange={(e) => spec && set(def.key, { mc: { ...spec, enabled: e.target.checked } })}
+            aria-label={`Enroll ${def.label} in Monte Carlo`}
+          />
+          <span className="icon" aria-hidden>{iconOf(def.key)}</span>
+          <span className="text">{def.label}</span>
+          {def.help && <HelpTip text={def.help} />}
+        </div>
+        <div className="param-input">
+          <span className="unit">nominal: {state.values[def.key]} {unitOf(def.kind)}</span>
+        </div>
+      </div>
       {mcOn && spec && (
         <div className="param-mc">
           <select

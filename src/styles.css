@@ -253,6 +253,7 @@ button.icon-btn {
 .group-acc[open] > summary::before { transform: rotate(90deg); }
 .group-acc > summary:hover { color: var(--accent); }
 .group-acc .count { color: var(--muted); font-weight: 400; font-size: 0.78rem; }
+.group-acc .subtitle { color: var(--muted); font-weight: 400; font-size: 0.78rem; }
 .group-acc .param-body { padding: 4px 10px 10px; }
 
 /* --- inline enable toggle in the parameter label --------------------------- */
