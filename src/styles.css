@@ -224,6 +224,56 @@ button.icon-btn {
 
 .tab-hint { margin: 0 0 10px; }
 
+/* --- Options menu in the top bar ------------------------------------------- */
+
+.opt-menu { position: relative; }
+.opt-backdrop { position: fixed; inset: 0; z-index: 40; background: transparent; }
+.opt-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 41;
+  width: min(430px, calc(100vw - 24px));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.opt-group h3 {
+  margin: 10px 0 2px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.opt-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 2px;
+  font-size: 0.84rem;
+  border-bottom: 1px dashed var(--border);
+  cursor: pointer;
+}
+.opt-group .opt-item:last-child { border-bottom: none; }
+.opt-item input[type='checkbox'].toggle {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
+.opt-item .text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.opt-item .unit { color: var(--muted); font-size: 0.72rem; }
+
 /* --- collapsible parameter groups ----------------------------------------- */
 
 .group-acc {

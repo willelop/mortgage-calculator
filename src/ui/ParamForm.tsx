@@ -46,9 +46,10 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
   return (
     <div className="param-form">
       <p className="muted tab-hint">
-        Everything has its own place: the <strong>groups below hold the values</strong>
-        {' '}a disabled feature is dimmed — switch it on under <strong>Options</strong>.
-        Under <strong>Monte Carlo</strong> you choose which values are simulated randomly.
+        The <strong>groups below hold the values</strong> — a disabled feature is
+        dimmed, and you switch features on or off in the <strong>⚙️ Options</strong> menu
+        in the top bar. Under <strong>Monte Carlo</strong> you choose which values are
+        simulated randomly.
       </p>
 
       {MAIN_GROUPS.map((g) => {
@@ -67,20 +68,6 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
           </Accordion>
         );
       })}
-
-      <Accordion
-        title="Options"
-        subtitle="enable or disable features"
-        count={PARAM_DEFS.filter((d) => MAIN_GROUPS.includes(d.group) && (d.toggleable !== false || d.kind === 'switch') && visible(d)).length}
-        open={!!openGroups.options}
-        onToggle={() => toggleGroup('options')}
-      >
-        {MAIN_GROUPS.map((g) =>
-          PARAM_DEFS.filter((d) => d.group === g && (d.toggleable !== false || d.kind === 'switch') && visible(d)).map((d) => (
-            <OptionRow key={d.key} def={d} state={state} set={set} isOn={isOn(d)} />
-          )),
-        )}
-      </Accordion>
 
       <Accordion
         title="Monte Carlo"
@@ -179,46 +166,6 @@ function ValueBox({
               <span className="unit">{unitOf(def.kind)}</span>
             </>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Options row: the enable/switch control only — values live in the groups. */
-function OptionRow({
-  def,
-  state,
-  set,
-  isOn,
-}: {
-  def: ParamDef;
-  state: ParamState;
-  set: Setter;
-  isOn: boolean;
-}): JSX.Element {
-  const toggle = (checked: boolean) => {
-    if (def.kind === 'switch') set(def.key, { value: checked ? 1 : 0 });
-    else set(def.key, { on: checked });
-  };
-
-  return (
-    <div className="param-box">
-      <div className="param-main">
-        <div className="param-label">
-          <input
-            type="checkbox"
-            className="toggle"
-            checked={isOn}
-            onChange={(e) => toggle(e.target.checked)}
-            aria-label={def.kind === 'switch' ? def.label : `Enable ${def.label}`}
-          />
-          <span className="icon" aria-hidden>{iconOf(def.key)}</span>
-          <span className="text">{def.label}</span>
-          {def.help && <HelpTip text={def.help} />}
-        </div>
-        <div className="param-input">
-          <span className="unit">{isOn ? 'on' : 'off'}</span>
         </div>
       </div>
     </div>

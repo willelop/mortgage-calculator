@@ -5,6 +5,7 @@ import { ltvSurchargePct } from './engine/mortgage';
 import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
+import { OptionsMenu } from './ui/OptionsMenu';
 import { Results } from './ui/Results';
 import { Logo } from './ui/Logo';
 import { initialTheme, applyTheme, Theme } from './theme';
@@ -327,6 +328,7 @@ export default function App(): JSX.Element {
         )}
         <span className="hint">{enrolledCount} parameter(s) enrolled</span>
         <span className="gap" />
+        <OptionsMenu state={state} onChange={setState} />
         <button onClick={() => window.print()}>🖨 Print / PDF</button>
       </div>
 
