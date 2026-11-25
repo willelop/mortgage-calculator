@@ -45,6 +45,8 @@ export default function App(): JSX.Element {
   const [toast, setToast] = useState<string | null>(null);
   const [preset, setPreset] = useState('');
   const [mcProgress, setMcProgress] = useState<number | null>(null);
+  // main toggle: inputs or results. Both columns stay mounted; inactive is hidden.
+  const [mainTab, setMainTab] = useState<'inputs' | 'results'>('inputs');
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -88,6 +90,7 @@ export default function App(): JSX.Element {
           setMc(msg.result ?? null);
           setNominal(runScenario(stateRef.current));
           setSens(sensitivityAnalysis(stateRef.current));
+          setMainTab('results');
         }
         setMcProgress(null);
         setRunning(null);
@@ -147,6 +150,7 @@ export default function App(): JSX.Element {
       setNominal(runScenario(state));
       setSens(sensitivityAnalysis(state));
       setRunning(null);
+      setMainTab('results');
     }, 10);
   }, [state]);
 
@@ -160,6 +164,7 @@ export default function App(): JSX.Element {
           setMc(res);
           setNominal(runScenario(state));
           setSens(sensitivityAnalysis(state));
+          setMainTab('results');
         } finally {
           setRunning(null);
         }
@@ -218,6 +223,15 @@ export default function App(): JSX.Element {
     const s = localStorageLoad(name);
     if (s) setState(s);
   };
+
+  // Plotly measures its container while the results column is hidden (width 0);
+  // nudge the responsive charts after switching to Results so they fill the column.
+  useEffect(() => {
+    if (mainTab !== 'results') return;
+    window.dispatchEvent(new Event('resize'));
+    const t = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
+    return () => window.clearTimeout(t);
+  }, [mainTab]);
 
   return (
     <div className="app">
@@ -339,11 +353,30 @@ export default function App(): JSX.Element {
         </div>
       </div>
 
-      <main className="grid">
-        <div className="col-params">
+      <div className="form-tabs main-tabs" role="tablist" aria-label="Main area">
+        <button
+          role="tab"
+          aria-selected={mainTab === 'inputs'}
+          className={mainTab === 'inputs' ? 'tab active' : 'tab'}
+          onClick={() => setMainTab('inputs')}
+        >
+          ✏️ Inputs
+        </button>
+        <button
+          role="tab"
+          aria-selected={mainTab === 'results'}
+          className={mainTab === 'results' ? 'tab active' : 'tab'}
+          onClick={() => setMainTab('results')}
+        >
+          📊 Results
+        </button>
+      </div>
+
+      <main className={`grid ${mainTab === 'inputs' ? 'inputs-only' : 'results-only'}`}>
+        <div className="col-params" hidden={mainTab !== 'inputs'}>
           <ParamForm state={state} onChange={setState} />
         </div>
-        <div className="col-results">
+        <div className="col-results" hidden={mainTab !== 'results'}>
           <Results nominal={nominal} mc={mc} sens={sens} inflationPct={num(state, 'inflation')} />
           <section className="card assumptions">
             <h2>Model assumptions & limits</h2>

@@ -139,6 +139,10 @@ button.icon-btn {
 .grid { display: grid; grid-template-columns: minmax(420px, 1fr) minmax(560px, 1.4fr); gap: 16px; }
 @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
 
+/* main Inputs/Results toggle: only one column is visible, take the full width */
+.grid.inputs-only, .grid.results-only { grid-template-columns: 1fr; }
+.main-tabs { margin: 0 0 10px; }
+
 .card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
@@ -434,7 +438,9 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
   .col-params, .toolbar, .runs-bar, footer, .warning, .toast, .csv-actions, .terms-toggle {
     display: none !important;
   }
+  .main-tabs { display: none !important; }
   .grid { display: block; }
+  .col-results[hidden] { display: block !important; } /* results print even if the Inputs tab is shown */
   .card {
     break-inside: avoid;
     box-shadow: none;
