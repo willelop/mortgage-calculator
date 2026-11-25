@@ -111,6 +111,17 @@ button.icon-btn {
 .runs-bar .seed input { width: 80px; }
 .runs-bar .gap { flex: 1; }
 .runs-bar .hint { color: var(--muted); font-size: 0.85rem; }
+.run-group {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg);
+}
+.run-group-label {
+  font-size: 0.78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted);
+}
 
 .toast {
   position: fixed; top: 12px; right: 16px;

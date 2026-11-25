@@ -265,6 +265,8 @@ export default function App(): JSX.Element {
             🗑 Clear saved
           </button>
           <button onClick={() => setState(defaultState())}>↺ Reset to defaults</button>
+          <OptionsMenu state={state} onChange={setState} />
+          <button onClick={() => window.print()}>🖨 Print / PDF</button>
         </div>
         {toast && <div className="toast">{toast}</div>}
       </header>
@@ -295,41 +297,46 @@ export default function App(): JSX.Element {
       )}
 
       <div className="runs-bar">
-        <button className="primary" onClick={runNominal} disabled={running !== null}>
-          {running === 'nominal' ? 'Running…' : '1 ▶ Run nominal scenario'}
-        </button>
-        <span className="gap" />
-        <input
-          type="number"
-          min={100}
-          max={10000}
-          step={100}
-          value={mcRuns}
-          onChange={(e) => setMcRuns(Math.max(100, Math.min(10000, parseInt(e.target.value || '1000', 10))))}
-          title="Number of Monte Carlo runs"
-        />
-        <label className="seed">
-          seed
-          <input
-            type="number"
-            value={seed}
-            onChange={(e) => setSeed(parseInt(e.target.value || '42', 10))}
-          />
-        </label>
-        <button className="primary" onClick={runMc} disabled={running !== null}>
-          {running === 'mc'
-            ? `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`
-            : `2 ▶ Run Monte Carlo (${mcRuns})`}
-        </button>
-        {running === 'mc' && (
-          <button className="danger" onClick={cancelMc}>
-            ✕ Cancel
+        <div className="run-group">
+          <span className="run-group-label">Deterministic scenario</span>
+          <button className="primary" onClick={runNominal} disabled={running !== null}>
+            {running === 'nominal' ? 'Running…' : '▶ Run'}
           </button>
-        )}
-        <span className="hint">{enrolledCount} parameter(s) enrolled</span>
-        <span className="gap" />
-        <OptionsMenu state={state} onChange={setState} />
-        <button onClick={() => window.print()}>🖨 Print / PDF</button>
+          <span className="hint">one pass with your exact inputs</span>
+        </div>
+        <div className="run-group">
+          <span className="run-group-label">🎲 Monte Carlo</span>
+          <label className="seed" title="Number of Monte Carlo runs">
+            runs
+            <input
+              type="number"
+              min={100}
+              max={10000}
+              step={100}
+              value={mcRuns}
+              onChange={(e) => setMcRuns(Math.max(100, Math.min(10000, parseInt(e.target.value || '1000', 10))))}
+            />
+          </label>
+          <label className="seed">
+            seed
+            <input
+              type="number"
+              value={seed}
+              onChange={(e) => setSeed(parseInt(e.target.value || '42', 10))}
+            />
+          </label>
+          <span className="hint">{enrolledCount} parameter(s) enrolled</span>
+          <button className="primary" onClick={runMc} disabled={running !== null}>
+            {running === 'mc'
+              ? `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`
+              : '▶ Run'}
+          </button>
+          {running === 'mc' && (
+            <button className="danger" onClick={cancelMc}>
+              ✕ Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <main className="grid">
