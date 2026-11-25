@@ -1,6 +1,7 @@
 # Agent instructions — src/ui (React components)
 
-Extends the root `AGENTS.md`. The closest file wins on conflict.
+Loaded via pointer from the root `AGENTS.md` — read it before working here; on
+conflict the root file's always-apply rules win.
 
 ## Component map
 
