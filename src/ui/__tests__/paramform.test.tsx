@@ -42,7 +42,7 @@ function Harness({ initial, onState }: { initial: ParamState; onState?: (s: Para
 
 describe('tabbed ParamForm', () => {
   it('has one tab per group plus Monte Carlo, Global active by default', () => {
-    const { container } = render(<ParamForm state={defaultState()} onChange={() => {}} />);
+    const { container } = render(<MantineProvider><ParamForm state={defaultState()} onChange={() => {}} /></MantineProvider>);
     const tabs = screen.getAllByRole('tab');
     expect(tabs.length).toBe(7);
     expect((tabs[0].textContent ?? '').includes('Global')).toBe(true);
@@ -53,7 +53,7 @@ describe('tabbed ParamForm', () => {
   });
 
   it('edits survive switching tabs (panels stay mounted, hidden ones inactive)', () => {
-    render(<ParamForm state={defaultState()} onChange={() => {}} />);
+    render(<MantineProvider><ParamForm state={defaultState()} onChange={() => {}} /></MantineProvider>);
     // Global tab is active: change the time horizon 25 → 30
     fireEvent.change(screen.getByDisplayValue('25'), { target: { value: '30' } });
     // switch away and back
@@ -66,11 +66,12 @@ describe('tabbed ParamForm', () => {
   it('Monte-Carlo tab enrolls a parameter and expands distribution + min/max', () => {
     const { container } = render(<Harness initial={defaultState()} />);
     const panelOf = () => getByTestId(container, 'tab-panel-mc');
+    const isDisplayed = (el: HTMLElement) => getComputedStyle(el).display !== 'none';
     // all panels mounted; the MC one starts hidden
-    expect(panelOf().hasAttribute('hidden')).toBe(true);
+    expect(isDisplayed(panelOf())).toBe(false);
     fireEvent.click(screen.getByRole('tab', { name: /Monte Carlo/ }));
     const panel = panelOf();
-    expect(panel.hasAttribute('hidden')).toBe(false);
+    expect(isDisplayed(panel)).toBe(true);
     // correlations are editable here (their boxes are present with a number input)
     const corr = within(panel).getAllByText('ρ(stocks, property)')[0].closest('.param-box') as HTMLElement;
     expect(corr.querySelector('input[type="number"]')).toBeTruthy();
@@ -127,9 +128,9 @@ describe('OptionsMenu (feature toggles)', () => {
 
 function visibleTabPanel(root: HTMLElement): HTMLElement {
   const panels = Array.from(root.querySelectorAll('[role="tabpanel"]'));
-  const visible = panels.find((p) => !(p as HTMLElement).hidden)!;
-  expect(panels.filter((p) => !(p as HTMLElement).hidden).length).toBe(1);
-  return visible as HTMLElement;
+  const visible = panels.filter((p) => getComputedStyle(p).display !== 'none');
+  expect(visible.length).toBe(1);
+  return visible[0] as HTMLElement;
 }
 
 function findParamBox(root: HTMLElement, labelFragment: string): HTMLElement {

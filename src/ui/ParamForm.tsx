@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Tabs } from '@mantine/core';
 import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, McSpec, Dist } from '../engine/params';
 
 interface Props {
@@ -82,35 +83,34 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
 
   return (
     <div className="param-form">
-      <div className="form-tabs" role="tablist" aria-label="Parameter sections">
-        {SECTIONS.map((s) => (
-          <button
-            key={s}
-            role="tab"
-            aria-selected={tab === s}
-            className={tab === s ? 'tab active' : 'tab'}
-            onClick={() => setTab(s)}
-          >
-            {s === 'mc' ? '🎲 ' : ''}{TAB_TITLES[s]}
-            <span className="count">({countOf(s)})</span>
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={tab}
+        onChange={(v) => setTab((v ?? MAIN_GROUPS[0]) as Section)}
+        keepMounted
+      >
+        <Tabs.List aria-label="Parameter sections">
+          {SECTIONS.map((s) => (
+            <Tabs.Tab key={s} value={s} leftSection={s === 'mc' ? '🎲' : undefined}>
+              {TAB_TITLES[s]}
+              <span className="count">({countOf(s)})</span>
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
 
       <p className="muted tab-hint">
         The tabs hold the <strong>values</strong> — a disabled feature is dimmed, and you
         switch features on or off in the <strong>⚙️ Options</strong> menu in the top bar.
       </p>
 
-      {/* every panel stays mounted; inactive ones are hidden so state is never lost */}
+      {/* every panel stays mounted; inactive ones are display:none so state is never lost */}
       {SECTIONS.map((s) => (
         <div
           key={s}
-          className="tab-body"
           role="tabpanel"
           aria-label={s === 'mc' ? TAB_TITLES[s] : (GROUP_LABELS as Record<string, string>)[s]}
           data-testid={`tab-panel-${s}`}
-          hidden={tab !== s}
+          style={{ display: tab === s ? undefined : 'none' }}
         >
           {sectionBody(s)}
         </div>
