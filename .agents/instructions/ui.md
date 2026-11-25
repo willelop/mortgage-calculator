@@ -14,6 +14,13 @@ conflict the root file's always-apply rules win.
 | `Plot.tsx` | Plotly wrapper; injects transparent paper bg + theme colors keyed on `dataset.theme` |
 | `Logo.tsx` | Inline SVG logo; use `currentColor` so it follows the theme |
 | `csv.ts` | `;`-separated CSV with BOM (German Excel opens it correctly) |
+| `../format.ts` | The only way to format money/percentages (de-DE `Intl`); never hand-format |
+| `../theme.ts` | Theme application + persistence; `applyTheme()` before `setTheme()` on toggle |
+
+`src/theme.ts` details: initial theme resolution order is explicit
+`localStorage` → `prefers-color-scheme` → light; the persisted key is
+`buyvsrent.theme`; all themed colors flow through CSS variables, so new CSS
+must never hard-code hex values that exist as variables.
 
 ## Hard invariants (each of these broke the page once — do not reintroduce)
 

@@ -6,11 +6,14 @@ ones relevant to your task before writing code** in those areas:
 
 | You are working on… | Read first |
 |---|---|
-| `src/engine/**` | `.agents/instructions/engine.md` |
-| `src/ui/**` | `.agents/instructions/ui.md` |
+| `src/engine/**`, `src/mc-worker.ts` | `.agents/instructions/engine.md` |
+| `src/ui/**`, `src/App.tsx`, `src/theme.ts` | `.agents/instructions/ui.md` |
 | planning or roadmap work | `.agents/instructions/roadmap.md` |
 
 On conflict: this file wins over the `.agents/instructions/` files.
+
+Never hand-format money or percentages: import from `src/format.ts`
+(de-DE `Intl` wrappers — `fmtEur`, `fmtEurCompact`, `fmtPct`, `fmtSignedEur`).
 
 ## What this project is
 

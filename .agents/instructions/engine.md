@@ -23,6 +23,15 @@ conflict the root file's always-apply rules win.
 | `monte-carlo.ts` | Correlated shocks + ensemble loop (also run inside `src/mc-worker.ts`) |
 | `sensitivity.ts` | One-at-a-time sensitivity around the nominal scenario |
 
+## Worker boundary (`src/mc-worker.ts` — not in this folder, same rules apply)
+
+The Web Worker imports this folder and runs the Monte-Carlo ensemble. Keep the
+contract intact: the worker receives the `ParamState` (+ seed), draws the
+shocks itself, and posts results/progress back — it must not touch the DOM,
+`localStorage`, or React state. Any impurity added to `src/engine/` breaks
+both the worker and the synchronous fallback in `App.tsx`; keep both paths
+working when you change `monte-carlo.ts` or `simulate.ts` signatures.
+
 ## Domain invariants (tests exist; keep them true)
 
 - Repayment can be defined by **initial amortization % (Anfangstilgung)** or by
