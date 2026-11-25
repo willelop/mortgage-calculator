@@ -9,10 +9,13 @@ Loaded via pointer from the root `AGENTS.md` for planning work.
    using them instead of inlining formats.)
 
 **Near term**
-2. Unit tests for the Options-menu toggling paths and the tabbed ParamForm
-   (currently only covered indirectly through the smoke tests).
-3. The Plotly bundle is a ~4.6 MB lazy chunk — try `manualChunks` and/or a
-   lighter chart layer; keep Plotly lazy-loaded either way.
+2. (Done 2026-11: `src/ui/__tests__/paramform.test.tsx` — 6 unit tests over
+   tab switching, edit persistence, MC enrollment/min-max seeding, Options
+   toggling incl. switch-kind features and the dimming rule.)
+3. (Done 2026-11: `manualChunks` in `vite.config.ts` — React in its own
+   `react-vendor` chunk, app entry down 195.87 → 54.06 k (gzip 64 → 19 k);
+   Plotly still lazy. Remaining: swap Plotly for a lighter chart layer —
+   moved to long-term item 16b.)
 4. German-language UI (the market is German; English texts are a legacy of the
    AI generation).
 
@@ -30,6 +33,8 @@ Loaded via pointer from the root `AGENTS.md` for planning work.
    in your browser" promise).
 10. Split the monolithic `App.tsx` (state + warnings + toolbar) into smaller
     components if it keeps growing.
+16b. Replace Plotly with a lighter chart layer (the 4.6 MB chunk is inherent
+    to Plotly; losing zoom/variants must be weighed against mobile load).
 
 **Model depth — German mortgage realism (domain features, roughly in order of
 being asked for / cheapest-first)**

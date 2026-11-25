@@ -104,7 +104,14 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
 
       {/* every panel stays mounted; inactive ones are hidden so state is never lost */}
       {SECTIONS.map((s) => (
-        <div key={s} className="tab-body" role="tabpanel" hidden={tab !== s}>
+        <div
+          key={s}
+          className="tab-body"
+          role="tabpanel"
+          aria-label={s === 'mc' ? TAB_TITLES[s] : (GROUP_LABELS as Record<string, string>)[s]}
+          data-testid={`tab-panel-${s}`}
+          hidden={tab !== s}
+        >
           {sectionBody(s)}
         </div>
       ))}
