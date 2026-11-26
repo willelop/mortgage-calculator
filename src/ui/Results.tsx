@@ -407,7 +407,6 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
       ]),
     );
 
-  const pct = (v: number, total: number) => (total > 0 ? (v / total) * 100 : 0);
   const x = rows.map((r) => r.year);
 
   return (
@@ -421,32 +420,32 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
       </div>
       <p className="muted">
         {de
-          ? 'Anteil der Jahreszahlung, der auf Zinsen vs. Tilgung entfällt (reguläre Annuitätentilgung und Sondertilgung). Anfangs ist die Zahlung überwiegend Zins; der Anteil verschiebt sich mit der Zeit zur Tilgung.'
-          : "Share of each year's mortgage payment that goes to interest vs. amortization (regular annuity repayment and Sondertilgung). Early on the payment is mostly interest; the share shifts towards principal over time."}
+          ? 'Jahreszahlung in Euro, aufgeteilt nach Zinsen vs. Tilgung (reguläre Annuitätentilgung und Sondertilgung). Die Gesamthöhe der Balken ist die jeweilige Jahreszahlung: bei der Annuität konstant, bei linearer Tilgung oder nach Tilgungsfreijahren sinkt sie — der Rückgang ist direkt in Euro sichtbar.'
+          : "Yearly payment in euros, split into interest vs. amortization (regular annuity repayment and Sondertilgung). The total bar height is the year's payment: constant for the annuity shape, declining for linear repayment or after grace years — the reduction is directly visible in euros."}
       </p>
       <Plot
         ariaLabel={de ? 'Balkendiagramm: Tilgungsplan' : 'Bar chart: amortization'}
         ariaDescription={de
-          ? 'Jährliche Rate aufgeteilt in Zins- und Tilgungsanteil — der Tilgungsanteil wächst mit sinkender Restschuld.'
-          : 'Yearly payment split into interest and principal — the principal share grows as the balance shrinks.'}
+          ? 'Jährliche Zahlung in Euro, aufgeteilt in Zins- und Tilgungsanteil — die Gesamthöhe der Balken zeigt, ob die Zahlung konstant bleibt (Annuität) oder sinkt (lineare Tilgung).'
+          : 'Yearly payment in euros split into interest and principal — the total bar height shows whether the payment stays constant (annuity) or declines (linear repayment).'}
         data={[
           {
             x,
-            y: rows.map((r) => pct(r.interest, r.payment)),
+            y: rows.map((r) => r.interest),
             name: de ? 'Zins' : 'Interest',
             type: 'bar',
             marker: { color: AMORT_COLORS.interest },
           },
           {
             x,
-            y: rows.map((r) => pct(r.principal, r.payment)),
+            y: rows.map((r) => r.principal), // yearlyAmortization already excludes sondertilgung
             name: de ? 'Tilgung (Annuität)' : 'Amortization (annuity)',
             type: 'bar',
             marker: { color: AMORT_COLORS.principal },
           },
           {
             x,
-            y: rows.map((r) => pct(r.sondertilgung, r.payment)),
+            y: rows.map((r) => r.sondertilgung),
             name: 'Sondertilgung',
             type: 'bar',
             marker: { color: AMORT_COLORS.sonder },
@@ -457,7 +456,7 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
           bargap: 0.2,
           margin: { l: 60, r: 20, t: 10, b: 50 },
           xaxis: { title: de ? 'Jahr' : 'Year' },
-          yaxis: { title: de ? '% der Jahreszahlung' : '% of yearly payment', range: [0, 100], ticksuffix: '%' },
+          yaxis: { title: de ? 'Jahreszahlung (€/Jahr)' : 'Yearly payment (€/yr)', ticksuffix: ' €', tickformat: ',.0f' },
           legend: { orientation: 'h' },
           hovermode: 'x',
         }}
