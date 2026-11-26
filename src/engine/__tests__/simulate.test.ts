@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultState } from '../params';
-import { runScenario } from '../simulate';
+import { runScenario, loanAmountFor } from '../simulate';
 
 describe('runScenario — smoke & invariants', () => {
   it('returns H+1 yearly rows labelled 0..H', () => {
@@ -48,6 +48,33 @@ describe('runScenario — smoke & invariants', () => {
     s.values.equity = 200_000;
     const res = runScenario(s);
     expect(res.nwBuy[0]).toBeCloseTo(200_000 - res.transactionCosts, 0);
+  });
+
+  it('2 % Disagio grosses up the loan and raises the effective rate', () => {
+    const s = defaultState();
+    s.values.disagio_pct = 2;
+    const base = defaultState();
+    const baseLoan = loanAmountFor(base); // no Disagio
+    const loan = loanAmountFor(s);
+    // bank disburses loan × (1 − 0.02) = exactly the no-Disagio loan amount
+    expect(loan).toBeCloseTo(baseLoan / (1 - 0.02), 4);
+    const res = runScenario(s);
+    expect(res.loanAmount).toBeCloseTo(loan, 4);
+    // t=0 buy net worth = equity − costs − the Disagio fee (borrower owes the grossed-up loan)
+    expect(res.nwBuy[0]).toBeCloseTo(defaultState().values.equity - res.transactionCosts - loan * 0.02, 0);
+    // effective rate strictly above the nominal rate (annuity, fixed 10y)
+    expect(res.effectiveFixedRatePct).toBeGreaterThan(res.nominalFixedRatePct);
+    // IRR check: payments + Restschuld discounted at the effective rate = disbursed amount
+    const n = Math.round(defaultState().values.fixed_years) * 12;
+    const rm = res.effectiveFixedRatePct / 100 / 12;
+    const disbursed = loan * (1 - 0.02);
+    let npv = 0;
+    for (let k = 1; k <= n; k++) npv += res.effectiveMonthlyPayment / Math.pow(1 + rm, k);
+    npv += res.restschuldAtFixation / Math.pow(1 + rm, n);
+    expect(npv).toBeCloseTo(disbursed, -1);
+    // no Disagio → rates coincide
+    const noD = runScenario(base);
+    expect(noD.effectiveFixedRatePct).toBeCloseTo(noD.nominalFixedRatePct, 9);
   });
 
   it('kaution is included in the rent branch at t=0', () => {

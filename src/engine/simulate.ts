@@ -21,7 +21,7 @@
  */
 
 import { ParamState, num, switchOn } from './params';
-import { mortgageSchedule, yearlyAmortization, AmortYear, ltvSurchargePct } from './mortgage';
+import { mortgageSchedule, yearlyAmortization, AmortYear, ltvSurchargePct, effectiveRatePct } from './mortgage';
 import {
   Portfolio, TaxParams, newPortfolio, growMonth, deposit, withdrawGross,
   resetYearAllowance, payableTax,
@@ -66,6 +66,10 @@ export interface ScenarioResult {
   effectiveTilgungPct: number;
   /** effective initial monthly payment to the bank during the fixed period */
   effectiveMonthlyPayment: number;
+  /** effective annual fixed rate incl. LTV surcharge and Disagio (equals the nominal rate when no Disagio) */
+  effectiveFixedRatePct: number;
+  /** contractual (nominal) annual fixed rate incl. LTV surcharge, before Disagio */
+  nominalFixedRatePct: number;
   totalInterest: number;
   /** yearly amortization rows (payment split into interest / principal / Sondertilgung) */
   amortization: AmortYear[];
@@ -84,9 +88,13 @@ export function transactionCostsFor(state: ParamState): number {
   return (price * rate) / 100 + num(state, 'renovation_budget');
 }
 
-/** Loan needed for the purchase (price + transaction costs − equity). */
+/** Loan needed for the purchase (price + transaction costs − equity), grossed up
+ *  by the Disagio: the bank disburses only (1 − Disagio) of the nominal loan, so
+ *  the shortfall is financed within the loan itself. */
 export function loanAmountFor(state: ParamState): number {
-  return Math.max(0, num(state, 'property_price') + transactionCostsFor(state) - num(state, 'equity'));
+  const base = Math.max(0, num(state, 'property_price') + transactionCostsFor(state) - num(state, 'equity'));
+  const disagio = Math.min(Math.max(num(state, 'disagio_pct'), 0), 95) / 100;
+  return disagio > 0 ? base / (1 - disagio) : base;
 }
 
 export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioResult {
@@ -101,7 +109,11 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const price = v('property_price');
   const transactionCosts = transactionCostsFor(state);
   const equity = v('equity');
-  const loanAmount = Math.max(0, price + transactionCosts - equity);
+  const loanBase = Math.max(0, price + transactionCosts - equity);
+  // Disagio: bank pays out only (1 − d) of the nominal loan; the shortfall is
+  // financed within the loan (borrower owes and pays interest on the full amount).
+  const disagioPct = Math.min(Math.max(v('disagio_pct'), 0), 95);
+  const loanAmount = disagioPct > 0 ? loanBase / (1 - disagioPct / 100) : loanBase;
   const residualEquity = Math.max(0, equity - price - transactionCosts);
 
   // LTV-based rate surcharge (Beleihungsauslauf pricing)
@@ -143,6 +155,12 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const fixedMonths = Math.max(0, Math.round(v('fixed_years')) * 12);
   const fixationYear = Math.min(Math.round(v('fixed_years')), H);
   const restschuldAtFixation = mortgage.balance[Math.min(fixedMonths, months)];
+  // Effective fixed rate incl. Disagio (IRR: disbursement vs payments + Restschuld
+  // at the end of the fixed period; only computed for the annuity shape).
+  const effectiveFixedRatePct =
+    shapeNum === 0 && loanAmount > 0 && disagioPct > 0
+      ? effectiveRatePct(loanAmount * (1 - disagioPct / 100), mortgage.payment[0], restschuldAtFixation, fixedMonths)
+      : effFixedRatePct;
 
   // --- Portfolio setup -----------------------------------------------------
   const taxP: TaxParams = {
@@ -353,6 +371,8 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     paymentMode,
     effectiveTilgungPct: tilgungPct,
     effectiveMonthlyPayment: mortgage.payment[0],
+    effectiveFixedRatePct,
+    nominalFixedRatePct: effFixedRatePct,
     totalInterest: mortgage.totalInterest,
     amortization: yearlyAmortization(mortgage, H),
     terminalDiff: nwBuy[last] - nwRent[last],

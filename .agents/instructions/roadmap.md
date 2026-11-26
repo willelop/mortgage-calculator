@@ -133,6 +133,15 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   loan × (1 − disagio/100). Show effective vs. nominal rate in Results
   (`src/format.ts` helpers only). Test: 2 % Disagio on the default state
   yields the exact expected loan delta.
+  (Done 2025-08: `disagio_pct` in the mortgage group (default 0, icon 🧾,
+  DE strings). Loan is grossed up: `loanAmount = base / (1 − d/100)` — the
+  shortfall vs the payout is financed within the loan, so the t=0 buy net
+  worth drops exactly by the fee. `effectiveRatePct` in `mortgage.ts`
+  computes the IRR of disbursement vs payments + Restschuld at the end of
+  the fixed period (annuity shape only); Results shows "effective vs
+  nominal" Stat whenever they differ. Test asserts the exact loan
+  gross-up, t=0 consistency, effective > nominal, and the IRR NPV ≈
+  disbursed amount; suite 83/83.)
 - **2c. `Vorabpauschale`** (was 16): in `invest.ts`, annual prepayment tax on
   the ETF path for horizons > 1 y (Basiszins as a named constant + comment;
   Teilfreistellung respected; Sparerpauschbetrag still only at liquidation).

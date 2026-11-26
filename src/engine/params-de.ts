@@ -97,6 +97,10 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Sollzins (Zinsbindung)',
     help: 'Nominaler Jahreszins während der Zinsbindungsfrist.',
   },
+  disagio_pct: {
+    label: 'Disagio (vorausbezahlt)',
+    help: 'Einmalige Gebühr an die Bank für einen niedrigeren Zins, % des Nennbetrags des Darlehens (0 = keins). Die Bank zahlt nur (1 − Disagio) des Darlehens aus; die Differenz wird mitfinanziert. Der effektive Zinssatz (in den Ergebnissen) liegt über dem Nominalzins. Faustregel: 1 % Disagio ≈ 0,15–0,25 pp niedrigerer Nominalzins — prüfen, ob sich das lohnt.',
+  },
   fixed_years: {
     label: 'Zinsbindung',
     help: 'Jahre, für die der Zins garantiert ist.',

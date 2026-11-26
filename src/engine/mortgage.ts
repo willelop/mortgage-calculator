@@ -143,6 +143,32 @@ export function germanAnnuityPayment(loan: number, ratePct: number, tilgungPct: 
 }
 
 /**
+ * Effective annual rate of a Disagio loan (IRR): the borrower receives only
+ * `disbursed` but pays `monthlyPayment` during the fixed period plus the
+ * outstanding `balanceAtEnd` (Restschuld) at its end. The rate equating the
+ * present value of those outflows to the disbursement is the effective rate.
+ * Bisection on the NPV, which is strictly decreasing in the monthly rate rm.
+ */
+export function effectiveRatePct(disbursed: number, monthlyPayment: number, balanceAtEnd: number, fixedMonths: number): number {
+  if (disbursed <= 0 || fixedMonths <= 0 || monthlyPayment <= 0) return 0;
+  const npv = (rm: number) => {
+    let s = 0;
+    for (let k = 1; k <= fixedMonths; k++) s += monthlyPayment / Math.pow(1 + rm, k);
+    return s + balanceAtEnd / Math.pow(1 + rm, fixedMonths) - disbursed;
+  };
+  if (npv(0) <= 0) return 0; // borrower pays back less than received — no positive IRR
+  let lo = 0;
+  let hi = 0.01; // 12 % p.a. monthly
+  while (npv(hi) > 0 && hi < 1) hi *= 2;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (npv(mid) > 0) lo = mid;
+    else hi = mid;
+  }
+  return ((lo + hi) / 2) * 1200;
+}
+
+/**
  * Rate surcharge (percentage points) for high loan-to-value, following typical
  * German bank pricing (Beleihungsauslauf):
  *   ≤ 60 % → best rate;  60–80 % → +0.25 pp;  > 80 % → +0.6 pp

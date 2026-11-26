@@ -85,6 +85,12 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
             />
           )}
           <Stat label={de ? 'Kaufnebenkosten' : 'Transaction costs'} value={fmtEur(nominal.transactionCosts)} />
+          {nominal.effectiveFixedRatePct !== nominal.nominalFixedRatePct && (
+            <Stat
+              label={de ? 'Effektiver Sollzins (inkl. Disagio)' : 'Effective fixed rate (incl. Disagio)'}
+              value={`${fmtPct(nominal.effectiveFixedRatePct / 100)}${de ? ` statt ${fmtPct(nominal.nominalFixedRatePct / 100)} nominal` : ` vs ${fmtPct(nominal.nominalFixedRatePct / 100)} nominal`}`}
+            />
+          )}
         </div>
         <Plot
           data={[

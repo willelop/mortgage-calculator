@@ -113,6 +113,7 @@ export const PARAM_DEFS: ParamDef[] = [
   // ---------- Mortgage ----------
   { key: 'equity', label: 'Equity / down payment available', group: 'mortgage', kind: 'eur', default: 150_000, min: 0, max: 5_000_000, step: 5000, toggleable: false, help: 'All liquid capital committed to the purchase (covers costs + part of price). Unused remainder stays invested.' },
   { key: 'fixed_rate', label: 'Fixed interest rate', group: 'mortgage', kind: 'pct', default: 3.5, min: 0, max: 15, step: 0.05, mcable: true, help: 'Nominal annual rate during the Zinsbindung (fixed-rate) period.' },
+  { key: 'disagio_pct', label: 'Disagio (upfront fee)', group: 'mortgage', kind: 'pct', default: 0, min: 0, max: 5, step: 0.25, toggleable: false, help: 'One-off fee paid to the bank for a lower rate, % of the nominal loan (0 = none). The bank disburses only (1 − Disagio) of the loan, so the shortfall is financed within the loan; the effective rate (shown in the results) is higher than the nominal rate. Rule of thumb: 1 % Disagio ≈ 0.15–0.25 pp lower nominal rate — check whether the effective rate is worth paying cash today.' },
   { key: 'fixed_years', label: 'Fixed-rate period (Zinsbindung)', group: 'mortgage', kind: 'count', default: 10, min: 1, max: 30, step: 1, mcable: true, help: 'Years the fixed rate is guaranteed.' },
   { key: 'followup_rate', label: 'Follow-up rate after fixed period', group: 'mortgage', kind: 'pct', default: 5.0, min: 0, max: 15, step: 0.25, toggleable: false, mcable: true, help: 'Assumed rate when re-fixing (or going variable) after Zinsbindung.' },
   { key: 'initial_tilgung', label: 'Initial amortization (Anfangstilgung)', group: 'mortgage', kind: 'pct', default: 2.0, min: 0.5, max: 10, step: 0.25, toggleable: false, mcable: true, visibleWhen: (v) => Math.round(v['tilgung_mode'] ?? 0) === 0, help: '% of the original loan repaid per year at the start.' },
@@ -187,6 +188,7 @@ export const ICON: Record<string, string> = {
   // mortgage
   equity: '💰',
   fixed_rate: '💹',
+  disagio_pct: '🧾',
   fixed_years: '⏳',
   followup_rate: '🔁',
   initial_tilgung: '📉',
