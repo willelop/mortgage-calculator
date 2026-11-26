@@ -1,110 +1,230 @@
-# Roadmap — working plan, in priority order
+# Roadmap v2 — working plan, in priority order
 
-Loaded via pointer from the root `AGENTS.md` for planning work.
+Regenerated 2026-11 after the i18n / realism / robustness batch (items 4, 5,
+6, 17, 18, 19, 21 done — see the archive at the bottom). Every open item now
+carries ordered implementation steps, target files and a "Done when" block so
+a low-depth model can execute it without re-deriving context. Read the
+referenced `.agents/instructions/*.md` before touching those areas.
 
-**Correctness / hygiene**
-1. Keep the full gate green on every commit; CI covers it, but never push
-   expecting CI to catch what tsc can.
-   (Done 2026-11: shared formatting helpers live in `src/format.ts` — keep
-   using them instead of inlining formats.)
+## How to execute an item (applies to every item below)
 
-**Near term**
-2. (Done 2026-11: `src/ui/__tests__/paramform.test.tsx` — 6 unit tests over
-   tab switching, edit persistence, MC enrollment/min-max seeding, Options
-   toggling incl. switch-kind features and the dimming rule.)
-3. (Done 2026-11: `manualChunks` in `vite.config.ts` — React in its own
-   `react-vendor` chunk, app entry down 195.87 → 54.06 k (gzip 64 → 19 k);
-   Plotly still lazy. Remaining: swap Plotly for a lighter chart layer —
-   moved to long-term item 16b.)
-4. (Done 2026-11: DE/EN toggle in the toolbar — branch `i18n-de-en`. English
-   stays the default/test language (`buyvsrent.lang`); German covers every
-   label, help text, warning, chart axis, CSV header and preset name. The
-   switch lives in `src/i18n.ts`; German strings in `src/engine/params-de.ts`
-   and as inline DE/EN pairs in the components.)
+1. Read the item's steps. If a step conflicts with a **Hard invariant** in
+   `.agents/instructions/ui.md` or `engine.md`, the invariant wins.
+2. Implement the steps in order; later steps assume earlier ones.
+3. Full gate before any commit: `npx tsc --noEmit`, `npx vitest run`,
+   `npm run build` — all green.
+4. One roadmap item per commit (or per PR-sized change); never mix unrelated
+   items.
+5. On completion, mark the item `(Done YYYY-MM: summary + numbers)` **in the
+   same commit**, and re-point anything that referenced it.
+6. Never commit personal data; `plan/` stays gitignored; commit footer per
+   root `AGENTS.md`; pushes happen from the user's machine
+   (`--force-with-lease` after any history rewrite).
+7. i18n note (applies everywhere): every new user-visible string must be
+   added to `src/i18n.ts` as a DE/EN pair (labels/help in
+   `src/engine/params.ts` + `src/engine/params-de.ts` for parameters).
+   English is the test language — never break the English assertions.
 
-**Mid term**
-5. (Done 2026-11: `sondertilgung_cap_pct` — the contract cap behind the
-   Sondertilgung warning is now an editable parameter (default 5 %) instead
-   of a hard-coded value; `hausgeld_indexation` select (inflation / fixed /
-   custom rate) with `hausgeld_index_rate` for the custom case.)
-6. (Done 2026-11: HelpTip is a real toggle button — tap/Enter opens the
-   tooltip, Escape closes it and restores focus, a tap outside dismisses it;
-   desktop hover/focus behavior unchanged via CSS focus-within/.open rules.)
-7. End-to-end smoke (Playwright) run in CI against the built bundle, so Pages
-   deploys never receive a blank page.
+---
 
-**Long term / consider**
-8. Scenario comparison view (two saved scenarios side by side).
-9. Service worker + installable PWA for offline use (fits the "all data stays
-   in your browser" promise).
-10. Split the monolithic `App.tsx` (state + warnings + toolbar) into smaller
-    components if it keeps growing.
-16b. Replace Plotly with a lighter chart layer (the 4.6 MB chunk is inherent
-    to Plotly; losing zoom/variants must be weighed against mobile load).
+## Priority 1 — Mobile-first UI redesign  ← the next improvement
 
-**Model depth — German mortgage realism (domain features, roughly in order of
-being asked for / cheapest-first)**
+The layout is still desktop-first: on a 390×844 phone the header wraps into a
+tall block, the sticky runs bar eats vertical space, 8 parameter tabs cramp
+into two rows, charts are taller than the viewport, and the options panel is
+scrolled out of reach. Goal: a phone user can go inputs → run → read results
+without pinch-zoom or horizontal scrolling at 320 px.
 
-11. Repayment shapes beyond annuity: `Tilgungsfreijahre` (repayment-free
-    grace period, common with new builds), `endfälliges Darlehen` (bullet
-    repayment — relevant when pairing with Bauspar/KfW), linear amortization.
-    The engine's mortgage module is already year-stepped; each is a
-    `tilgung_shape` extension of the repayment derivation.
-12. `Disagio` (Abgeld): up-front discount paid from equity, effective vs
-    nominal rate display. Cheap: one parameter + a payment-loading change.
-13. Couple mode: second `Sparerpauschbetrag` (2 000 € instead of 1 000 €)
-    and, if asked for, combining two equity pools. The model intentionally
-    assumes one income and one pool — widen only with an explicit toggle.
-14. `Bereitstellungszinsen` (commitment interest on drawn-but-not-used loan
-    for staged new-build disbursement) — often 3 %+ on the undrawn part.
-15. Energy-related costs: the lump-sum maintenance event can model a GEG
-    (heating) retrofit already; make it first-class with an efficiency-class
-    parameter so the reserve and retrofit defaults differ (class G vs A/B).
-16. `Vorabpauschale` for buy-and-hold ETFs in `invest.ts` (currently skipped):
-    small annual prepayment tax on gains; matters for horizons > 10 y.
+**Baseline measurement first (before any edit, report in the commit body):**
+Chrome DevTools device mode at 390×844 and 320×700: (a) horizontal overflow
+yes/no at 320 px, (b) scroll distance from top to the first Run button,
+(c) Lighthouse mobile performance + accessibility scores. Re-measure the same
+three at the end.
 
-**Robustness & engineering**
+### Steps
 
-17. (Done 2026-11: `src/ui/ErrorBoundary.tsx` wraps the app in `main.tsx` —
-    a render exception now shows a recoverable card with "Reload" and
-    "Reset parameters & reload" (clears the `buyvsrent.*` localStorage
-    entries when the persisted state itself is the trigger); bilingual via
-    browser language, with a boundary unit test.)
-18. (Done 2026-11: src/engine/__tests__/invariants.test.ts — property-style
-    checks across a grid of mutated states: series shape, loan fully amortizes
-    by term end whenever tilgung > 0, principal conservation
-    (loan0 − balance_end == Σ principal), payment == interest + principal,
-    balance monotone non-increasing, break-even/terminalDiff consistency,
-    kaution == 3× cold rent, no negative series, more equity → smaller loan,
-    and the freed-cash flow invariant.)
-19. (Done 2026-11: `deploy.yml` — tests run in their own `test` job and
-    build/deploy depend on it, so a red test can never reach Pages;
-    `concurrency` cancel-in-progress and npm caching were already in place.)
-20. Share links compress state (URL currently grows with every parameter —
-    deflate + base64 when it exceeds ~1 500 chars, with a graceful fallback).
+1. **Compact header on phones** (`src/App.tsx`, `src/styles.css`):
+   - Under 480 px: `header h1 { font-size: 1.05rem }`, `.brand .logo`
+     36×36 (the mobile media block already has rules — tighten them), and
+     hide the `.subtitle` (`display: none`) — its content is duplicated in
+     the README and the footer.
+   - Under 720 px: give the Preset `<select>` in the toolbar
+     `max-width: 150px` inside the existing `.toolbar` media block so it
+     stops forcing the other toolbar buttons onto extra rows.
+2. **Docked run bar on phones** (`src/styles.css`):
+   - Under 720 px: `.runs-bar { position: fixed; left: 0; right: 0; bottom: 0;
+     top: auto; margin: 0; border-radius: 12px 12px 0 0; z-index: 30;
+     padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }`
+   - Hide under 720 px: `.runs-bar .hint`, `.run-group-label` (the labels
+     reappear ≥ 720 px); the two Run buttons become the whole bar
+     (`flex: 1 1 auto` rule already exists).
+   - `.app { padding-bottom: 96px }` under 720 px so the dock never covers
+     the footer.
+   - The deterministic run button keeps its markup/text; no test changes.
+3. **Swipeable parameter tabs** (`src/styles.css`):
+   - Under 720 px: `.param-tabs .mantine-Tabs-tabList { flex-wrap: nowrap;
+     overflow-x: auto; scrollbar-width: none; }` plus
+     `.param-tabs .mantine-Tabs-tabList::-webkit-scrollbar { display: none; }`
+     so the 8 tabs swipe horizontally instead of wrapping. Keep the `.count`
+     badges visible.
+4. **Phone-sized charts** (`src/ui/Plot.tsx`, `src/ui/Results.tsx`):
+   - In `Plot.tsx`, inside the component add a guarded width check:
+     `const compact = typeof window !== 'undefined' && window.innerWidth < 720;`
+     then use `style={{ height: compact && height < 300 ? 240 : height }}` on
+     the returned div (and only the div — do NOT touch the `key` computation
+     or the Plotly config).
+   - In `Results.tsx`, set the large chart `<Plot height={380}>` calls to
+     `340`; keep the amortization overview at 380.
+5. **Key numbers on phones** (`src/styles.css`): the 2-column
+   `.keynumbers` rule under 720 px already exists — verify it still applies;
+   if a stat overflows at 320 px, drop `.stat .stat-value` to `1rem` in the
+   mobile block.
+6. **Touch-friendly tooltips** (`src/ui/ParamForm.tsx`, `src/ui/OptionsMenu.tsx`):
+   - HelpTip already toggles on tap/Enter and closes on Escape/outside-tap
+     (item 6 done). What remains is placement: on narrow screens the tooltip
+     can still leave the viewport when the trigger sits near the edge. Under
+     720 px keep the existing right-aligned rule
+     (`.help-tip .help-tooltip { right: 0; left: auto; transform: none }`)
+     and verify it applies to BOTH HelpTip copies (ParamForm + OptionsMenu);
+     if the two implementations drifted, extract one shared component to
+     `src/ui/HelpTip.tsx` and import it in both files (pure refactor, no
+     behavior change).
+7. **Touch targets** (`src/styles.css`, mobile block):
+   `button, select, .mc-toggle, .opt-item { min-height: 44px; }` and exempt
+   the inline mark with `.help-tip { min-height: 0; }`.
+8. **320 px overflow sweep**: the known suspects are `.amort-table`
+   (already scrolls inside `.amort-table-wrap` — keep) and `.param-mc` rows
+   (wrap — fine). For anything else that overflows, constrain the offending
+   selector with `max-width: 100%` inside the media block. Do not introduce
+   page-level `overflow-x: hidden` — hide the cause, not the symptom.
 
-**UX polish**
+**Done when**: (a) no horizontal scroll at 320×700; (b) run buttons usable
+while docked without scrolling past the first card; (c) all 8 tabs reachable
+by swipe; (d) tooltips usable by tap; (e) baseline vs. final measurements in
+the commit body; (f) full gate green; (g) smoke + paramform tests pass
+without changing their assertions (viewport-only CSS must not affect them).
 
-21. (Done 2026-11: city presets for Munich/Berlin/Leipzig/Hamburg with the
-    correct Bundesland Grunderwerbsteuer (3.5/6.0/5.5/4.5 %) and typical
-    price/rent economics; each preset's description carries a short "why" and
-    the preset dropdown shows it as the option tooltip.)
-22. Printable one-page "Entscheidungsvorlage": the headline numbers, the
-    decision, and the top sensitivities — the print CSS exists, add a layout
-    that deserves it.
-23. Number inputs get unit-aware steppers/sliders (value + slider pairs) for
-    the few headline inputs (price, equity, rate) in the Global/Purchase tabs.
+---
 
-**Explicit non-goals (do not implement; they would break the product promise)**
+## Priority 2 — Engine realism (one sub-item per commit, ordered)
+
+Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
+`.agents/skills/add-new-parameter/`), engine second (`src/engine/mortgage.ts`
+/ `invest.ts`), UI third, tests last. Follows the pattern set by item 5.
+
+- **2a. Repayment shapes** (was 11): `tilgung_shape` select — `annuity`
+  (default) | `linear` | `grace` (with `grace_years` count param) | `bullet`.
+  Implement in `mortgage.ts`'s year-step. Realism tests: bullet never
+  amortizes; linear amortization is linear in the outstanding balance; grace
+  years pay interest only and re-annuitize afterwards. UI: one select in the
+  Mortgage tab, extra count field only when `grace`.
+- **2b. `Disagio`** (was 12): `disagio_pct` 0–5 (step 0.25). Payment loading:
+  loan × (1 − disagio/100). Show effective vs. nominal rate in Results
+  (`src/format.ts` helpers only). Test: 2 % Disagio on the default state
+  yields the exact expected loan delta.
+- **2c. `Vorabpauschale`** (was 16): in `invest.ts`, annual prepayment tax on
+  the ETF path for horizons > 1 y (Basiszins as a named constant + comment;
+  Teilfreistellung respected; Sparerpauschbetrag still only at liquidation).
+  Test: tax > 0 and grows sub-linearly; exact value asserted for one
+  hand-computed year.
+- **2d. `Bereitstellungszinsen`** (was 14): commitment interest on the
+  undrawn share (default 3 % p.a.), only when the loan is disbursed in
+  stages (a new boolean + draw schedule may be needed — keep it a simple
+  two-phase draw if the full schedule is out of proportion).
+- **2e. Energy classes** (was 15): efficiency-class select (A–H) driving
+  different maintenance-reserve and retrofit defaults (class G vs. A/B).
+- **2f. Couple mode** (was 13) — last, only behind an explicit toggle:
+  second Sparerpauschbetrag (2 000 € instead of 1 000 €), optional second
+  equity pool. The single-income/pool assumption is intentional; do not
+  widen silently.
+
+---
+
+## Priority 3 — Quality infrastructure
+
+- **3a. E2E smoke in CI** (was 7): Playwright, single spec `e2e/smoke.spec.ts`:
+  load `/`, expect the header text (EN — default test language), click
+  "Run", assert a `.stat` value changes, no console errors. CI: job after
+  `build` in `deploy.yml`, against `vite preview`, main branch only. Keep
+  Plotly-heavy assertions out (canvas rendering is flaky in CI).
+- **3b. Share-link compression** (was 20): in `src/engine/state-io.ts`, when
+  `toShareUrl` exceeds ~1500 chars, deflate-raw + base64 via
+  `CompressionStream` with a plain fallback; round-trip unit test for both
+  paths; old plain links must still load (versioned prefix or try/catch).
+- **3c. Chart a11y** (new, small): Plotly figures get a `title`/`aria-label`
+  and the `Plot` wrapper a `role="img"` + short description from the card
+  heading; export/download buttons stay keyboard reachable.
+
+---
+
+## Priority 4 — Product & UX
+
+- **4a. Printable one-pager "Entscheidungsvorlage"** (was 22): a dedicated
+  print layout — headline numbers, decision-relevant deltas, top-3
+  sensitivities — as a hidden-on-screen section rendered only under
+  `@media print`. The print CSS base already exists.
+- **4b. Unit-aware steppers/sliders** (was 23): value+slider pairs for the
+  headline inputs (price, equity, rate, fixed period) in Global/Purchase;
+  Mantine `Slider` + `NumberInput` linked both ways; keyboard reachable;
+  tests keep using the NumberInput (getByDisplayValue) so the slider needs
+  no test coverage beyond one interaction test.
+- **4c. Scenario comparison** (was 8): two saved scenarios side by side —
+  reuse `localStorageSave/Load`; render a second Results column in a
+  dedicated comparison mode reachable from the toolbar.
+- **4d. PWA/offline** (was 9): service worker + manifest; fits the "all data
+  stays in your browser" promise; add only after the Pages deploy flow is
+  verified to keep working (stale-worker handling: skip-waiting + a toast
+  "updated, reload").
+
+## Priority 5 — Long-term
+
+- **5a. Split `App.tsx`** (was 10): 426 lines and growing — extract
+  `Toolbar`, `RunsBar`, `Warnings` when touched next; do not split for its
+  own sake.
+- **5b. Replace Plotly** (was 16b): the ~4.6 MB lazy chunk is inherent to
+  Plotly; revisit after Priority 1's mobile measurements. Weigh losing
+  zoom/variants against mobile load; the chart calls are already isolated in
+  `src/ui/Plot.tsx`, which keeps this swappable.
+
+## Explicit non-goals (do not implement; they would break the product promise)
 
 - No backend, accounts, or telemetry/analytics — everything stays in the
   browser.
 - No "you should buy" recommendation: the app presents scenarios and leaves
-  the decision to the user (the not-financial-advice disclaimer exists for
-  this).
-- No foreign-market tax models: the engine is German-law specific by design
+  the decision to the user (the not-financial-advice disclaimer exists).
+- No foreign-market tax models: German-law specific by design
   (Abgeltungsteuer, § 23 EStG, Grunderwerbsteuer) — generalize only if the
   tax model becomes parameterized, never by special-casing.
+
+---
+
+## Archive (done — context only, do not re-open)
+
+1. Formatting helpers in `src/format.ts`; always-apply gate discipline.
+2. `src/ui/__tests__/paramform.test.tsx` — 6 unit tests (tabs, edits, MC
+   enrollment, Options toggles, dimming rule).
+3. `manualChunks` React vendor split. (Entry is ~60 kB gzip since the
+   Mantine merge — accepted tradeoff, revisit only via 5b.)
+4. DE/EN toggle (`src/i18n.ts`, `src/engine/params-de.ts`); English stays the
+   default/test language.
+5. `sondertilgung_cap_pct` parameter (default 5 %) + `hausgeld_indexation`
+   select with custom rate.
+6. Accessible HelpTip: tap/Enter toggle, Escape close with focus restore,
+   outside-tap dismiss; hover behavior preserved on desktop.
+17. `src/ui/ErrorBoundary.tsx` in `main.tsx`: recoverable card, bilingual,
+   with a "reset parameters & reload" path that clears `buyvsrent.*`
+   localStorage when the persisted state itself is the trigger.
+18. `src/engine/__tests__/invariants.test.ts`: property-style engine checks
+   (series shape, amortization, principal conservation, payment identity,
+   monotone balance, break-even consistency, kaution, no negatives, equity
+   monotonicity, freed-cash invariant).
+19. `deploy.yml`: separate `test` job gates the deploy; concurrency
+   cancel-in-progress + npm caching in place.
+21. City presets (Munich/Berlin/Leipzig/Hamburg) with correct Bundesland
+   Grunderwerbsteuer (3.5/6.0/5.5/4.5 %) and preset description tooltips.
+- 2026-11: Mantine 8 + "modern sleek" design system merged to main
+  (`src/ui/mantine-theme.ts`, purple primary per commit a88e554); fully
+  GitHub Pages compatible.
 
 Audit this roadmap whenever you complete or invalidate an item; keep it honest
 instead of aspirational.
