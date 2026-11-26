@@ -128,7 +128,11 @@ describe('result-series invariants', () => {
         const i = r.years.indexOf(r.breakEvenYear);
         expect(i).toBeGreaterThan(0);
         expect(r.nwBuy[i]).toBeGreaterThanOrEqual(r.nwRent[i] - EPS);
-        expect(r.nwBuy[i - 1]).toBeLessThan(r.nwRent[i - 1]);
+        // strict crossover only when there IS a history: at i == 1 the year
+        // before is the start row (year 0), where the buy branch may already
+        // be ahead (rent locks up kaution + moving costs) without any
+        // crossover having happened.
+        if (i > 1) expect(r.nwBuy[i - 1]).toBeLessThan(r.nwRent[i - 1]);
       }
     }
   });
