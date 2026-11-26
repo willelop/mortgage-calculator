@@ -1,4 +1,4 @@
-{"type":"text","text":"successfully downloaded text file (SHA: c4e809bad483ee1b352e01d818e3f28ccff96182)"}# Buy vs. Rent — German Mortgage Calculator
+# Buy vs. Rent — German Mortgage Calculator
 
 > [!IMPORTANT]
 > **This project was entirely generated with AI** (Mistral Vibe / Mistral AI, with

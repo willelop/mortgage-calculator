@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import App from '../../App';
 import { defaultState } from '../../engine/params';
+import { setLang } from '../../i18n';
 
 afterEach(cleanup);
 
@@ -23,6 +24,14 @@ beforeAll(() => {
         dispatchEvent: () => false,
       }),
     });
+  }
+  if (!window.ResizeObserver) {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    window.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
   }
 });
 
@@ -56,7 +65,7 @@ describe('language toggle', () => {
   });
 
   it('param-form tabs keep working in German (panels stay mounted)', () => {
-    localStorage.setItem('buyvsrent.lang', 'de');
+    setLang('de');
     render(
       <MantineProvider>
         <App />
@@ -64,7 +73,7 @@ describe('language toggle', () => {
     );
     fireEvent.click(screen.getByRole('tab', { name: /Kaufnebenkosten/ }));
     expect(screen.getAllByText('Kaufpreis').length).toBeGreaterThan(0);
-    localStorage.removeItem('buyvsrent.lang');
+    setLang('en');
   });
 
   it('defaults come from the parameter registry (unchanged)', () => {

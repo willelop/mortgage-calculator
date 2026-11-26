@@ -1,4 +1,4 @@
-{"type":"text","text":"successfully downloaded text file (SHA: debf00a30bac733e530dee17ca488830bbb88ab2)"}# Roadmap — working plan, in priority order
+# Roadmap — working plan, in priority order
 
 Loaded via pointer from the root `AGENTS.md` for planning work.
 

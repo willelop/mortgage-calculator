@@ -235,8 +235,10 @@ export function groupLabelDe(g: string): string | undefined {
 }
 
 /** Localized label (German when available, English otherwise). */
-export function labelOf(d: { label: string; labelDe?: string }, lang: 'de' | 'en'): string {
-  return lang === 'de' && d.labelDe ? d.labelDe : d.label;
+export function labelOf(d: { key?: string; label: string; labelDe?: string }, lang: 'de' | 'en'): string {
+  if (lang !== 'de') return d.label;
+  if (d.labelDe) return d.labelDe;
+  return (d.key && DE_LABELS[d.key]?.label) || d.label;
 }
 
 /** Localized help text (falls back to the English `help`, '' if neither exists). */

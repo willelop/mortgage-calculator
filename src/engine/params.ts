@@ -1,4 +1,4 @@
-{"type":"text","text":"successfully downloaded text file (SHA: c7acd9b62281fb46ee2bcab1a118321de0b8e899)"}/**
+/**
  * Parameter registry — the single source of truth for every input of the model.
  *
  * Every parameter is:
