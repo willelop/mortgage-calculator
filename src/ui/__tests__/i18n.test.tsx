@@ -3,7 +3,7 @@
  * i18n tests — DE/EN toggle: English stays the default (tests & legacy users),
  * switching to German localizes labels, tabs and toolbar; choice persists.
  */
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
@@ -14,6 +14,11 @@ import { setLang } from '../../i18n';
 afterEach(cleanup);
 
 beforeAll(() => {
+  // Plotly's module init needs APIs jsdom lacks; stub the URL blob layer.
+  if (!window.URL.createObjectURL) {
+    (window.URL as unknown as Record<string, unknown>).createObjectURL = vi.fn(() => 'blob:mock');
+    (window.URL as unknown as Record<string, unknown>).revokeObjectURL = vi.fn();
+  }
   if (!window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
