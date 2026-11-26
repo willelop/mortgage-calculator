@@ -147,6 +147,14 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   Teilfreistellung respected; Sparerpauschbetrag still only at liquidation).
   Test: tax > 0 and grows sub-linearly; exact value asserted for one
   hand-computed year.
+  (Done 2025-08: `BASISZINS = 0.0255` named constant + `vorabpauschaleTax()`
+  in `invest.ts` — Basisertrag = start-of-year value × Basiszins × 70 %,
+  capped by the actual year's gain (0 on losses), taxed with
+  Teilfreistellung; Sparerpauschbetrag stays reserved for liquidation; tax
+  deducted from the portfolio value. Assessed each January from the second
+  year on, both branches, behind the always-on `vorabpauschale` switch
+  (Options menu). 5 tests incl. hand-computed year, loss year, and a
+  runScenario comparison; suite 88/88.)
 - **2d. `Bereitstellungszinsen`** (was 14): commitment interest on the
   undrawn share (default 3 % p.a.), only when the loan is disbursed in
   stages (a new boolean + draw schedule may be needed — keep it a simple

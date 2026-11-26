@@ -24,7 +24,7 @@ import { ParamState, num, switchOn } from './params';
 import { mortgageSchedule, yearlyAmortization, AmortYear, ltvSurchargePct, effectiveRatePct } from './mortgage';
 import {
   Portfolio, TaxParams, newPortfolio, growMonth, deposit, withdrawGross,
-  resetYearAllowance, payableTax,
+  resetYearAllowance, payableTax, vorabpauschaleTax,
 } from './invest';
 
 export interface YearlyShocks {
@@ -226,12 +226,21 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   let costIdx = 1;
   let rentIdx = 1;
   let hausgeldIdx = 1; // cumulative Hausgeld index (mode-dependent)
+  // portfolio values at the start of the previous calendar year (for the Vorabpauschale)
+  let prevYearStartVal: { buy: number; rent: number } | null = null;
 
   // --- Monthly loop --------------------------------------------------------
   for (let m = 0; m < months; m++) {
     const y = Math.floor(m / 12);
 
     if (m % 12 === 0) {
+      // Vorabpauschale for the previous calendar year (assessed each January):
+      // only from the second year on — a fund sold within its first year pays
+      // no prepayment tax. Sparerpauschbetrag stays reserved for liquidation.
+      if (sw('vorabpauschale') && y >= 1 && prevYearStartVal !== null) {
+        vorabpauschaleTax(buyPortfolio, taxP, prevYearStartVal.buy);
+        vorabpauschaleTax(rentPortfolio, taxP, prevYearStartVal.rent);
+      }
       resetYearAllowance(buyPortfolio);
       resetYearAllowance(rentPortfolio);
 
@@ -296,6 +305,10 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
       yctx.recurringM = recurringMonthly;
       yctx.rBlendM = rBlendM;
       yctx.kaution = kaution;
+
+      // year-start portfolio values — the Vorabpauschale base for this year,
+      // applied at the start of the *next* year's block
+      prevYearStartVal = { buy: buyPortfolio.value, rent: rentPortfolio.value };
 
       // run 12 months
       for (let mm = m; mm < m + 12 && mm < months; mm++) {

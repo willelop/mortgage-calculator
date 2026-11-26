@@ -137,6 +137,7 @@ export const PARAM_DEFS: ParamDef[] = [
   // ---------- Investment ----------
   { key: 'capital_stocks', label: 'Current capital — stocks / equity funds', group: 'invest', kind: 'eur', default: 40_000, min: 0, max: 10_000_000, step: 1000, toggleable: false, help: 'Liquid capital available today held in stocks/broad equity ETFs. In the renting branch it stays invested; part of it can be consumed as equity when buying.' },
   { key: 'capital_bonds', label: 'Current capital — bonds / savings', group: 'invest', kind: 'eur', default: 15_000, min: 0, max: 10_000_000, step: 1000, toggleable: false, help: 'Fixed income & cash-like holdings.' },
+  { key: 'vorabpauschale', label: 'Vorabpauschale (annual fund prepayment tax)', group: 'invest', kind: 'switch', default: 1, toggleable: false, help: 'German law levies capital-gains tax on equity funds annually via the Vorabpauschale: Basisertrag = fund value × Basiszins × 70 %, taxed on the gain actually realized ( Teilfreistellung applies). Charging it annually (instead of only at sale) slightly reduces compounding — the honest German baseline.' },
   { key: 'expected_return_stocks', label: 'Expected return — stocks', group: 'invest', kind: 'pct', default: 7.0, min: 0, max: 20, step: 0.25, corr: 'stocks', mcable: true, help: 'Nominal p.a., before taxes.' },
   { key: 'vol_stocks', label: 'Volatility — stocks (σ)', group: 'invest', kind: 'pct', default: 15.0, min: 0, max: 40, step: 1, toggleable: false, help: 'Annual standard deviation used in the Monte Carlo.' },
   { key: 'expected_return_bonds', label: 'Expected return — bonds/savings', group: 'invest', kind: 'pct', default: 2.5, min: 0, max: 15, step: 0.25, toggleable: false, mcable: true, help: 'Nominal p.a., before taxes. Use rate 0 to model cash.' },
@@ -211,6 +212,7 @@ export const ICON: Record<string, string> = {
   // investment
   capital_stocks: '🗂️',
   capital_bonds: '💵',
+  vorabpauschale: '🏦',
   expected_return_stocks: '📊',
   vol_stocks: '🎢',
   expected_return_bonds: '🏦',

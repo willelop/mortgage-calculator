@@ -166,6 +166,10 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Mietsteigerung folgt Inflation',
     help: 'Wenn aktiv, folgt die Mietsteigerung dem Inflationsparameter.',
   },
+  vorabpauschale: {
+    label: 'Vorabpauschale (jährliche Fondsvorauszahlung)',
+    help: 'Das deutsche Recht besteuert Aktienfonds jährlich über die Vorabpauschale: Basisertrag = Fondsvalue × Basiszins × 70 %, besteuert auf den tatsächlich realisierten Gewinn (mit Teilfreistellung). Die jährliche Versteuerung dämpft den Zinseszinseffekt leicht — die ehrliche deutsche Basis.',
+  },
   rent_upfront_costs: {
     label: 'Einzugskosten (Küche, Kautionsprovision …)',
     help: 'Einmalige Kosten beim Einzug in die Mietwohnung.',

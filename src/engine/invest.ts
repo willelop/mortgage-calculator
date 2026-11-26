@@ -67,6 +67,31 @@ export function resetYearAllowance(p: Portfolio): void {
   p.allowanceUsed = 0;
 }
 
+/**
+ * Basiszins for the Vorabpauschale (§ 2 (4) InvStG): set by the BMF each
+ * January, currently ~2.5 % p.a. Update this constant when the BMF publishes
+ * a new value — it is a deliberate simplification to keep the engine pure.
+ */
+export const BASISZINS = 0.0255;
+
+/**
+ * Annual Vorabpauschale (prepayment tax, § 18 InvStG, simplified):
+ * Basisertrag = start-of-year value × Basiszins × 70 %; the taxable
+ * Vorabpauschale is the smaller of that and the actual gain of the year
+ * (0 on losses). Tax is levied on the taxable share with Teilfreistellung
+ * applied; the Sparerpauschbetrag is NOT consumed here — it stays available
+ * for the liquidation tax (conservative simplification). The tax is deducted
+ * from the portfolio value and returned for reporting.
+ */
+export function vorabpauschaleTax(p: Portfolio, tp: TaxParams, startValue: number): number {
+  if (startValue <= 0 || p.value <= startValue) return 0;
+  const basisertrag = startValue * BASISZINS * 0.7;
+  const vorab = Math.min(basisertrag, p.value - startValue);
+  const tax = vorab * tp.taxRate * (1 - tp.teilfreistellung);
+  p.value = Math.max(0, p.value - tax);
+  return tax;
+}
+
 /** Final tax if the whole portfolio were liquidated now. */
 export function payableTax(p: Portfolio, tp: TaxParams): number {
   const gain = Math.max(0, p.value - p.basis);

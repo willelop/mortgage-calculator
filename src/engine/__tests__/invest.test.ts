@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   newPortfolio, growMonth, deposit, withdrawGross, payableTax, resetYearAllowance,
+  vorabpauschaleTax,
 } from '../invest';
+import { defaultState } from '../params';
+import { runScenario } from '../simulate';
 
 const tp = { taxRate: 0.26375, teilfreistellung: 0.15, allowance: 1000 };
 
@@ -66,5 +69,63 @@ describe('invest — tax-aware portfolio', () => {
     const p = newPortfolio(5_000); // no gains
     const net = withdrawGross(p, 5_000, tp);
     expect(net).toBeCloseTo(5_000, 4);
+  });
+});
+
+describe('invest — Vorabpauschale', () => {
+  it('hand-computed year: Basisertrag capped by actual gain', () => {
+    // start 10 000, grows to 10 800 (gain 800 > Basisertrag 178.5)
+    // Basisertrag = 10 000 × 0.0255 × 0.7 = 178.5
+    // Vorabpauschale = min(178.5, 800) = 178.5
+    // tax = 178.5 × 0.26375 × 0.85 = 40.0177…, no allowance consumed
+    const p = newPortfolio(10_000);
+    for (let i = 0; i < 12; i++) growMonth(p, Math.pow(1.08, 1 / 12) - 1);
+    const tax = vorabpauschaleTax(p, tp, 10_000);
+    expect(tax).toBeCloseTo(178.5 * 0.26375 * 0.85, 4);
+    expect(p.value).toBeCloseTo(10_800 - tax, 4);
+    expect(p.allowanceUsed).toBe(0); // Sparerpauschbetrag untouched
+  });
+
+  it('gain below the Basisertrag is taxed only on the actual gain', () => {
+    // start 10 000, grows to 10 100 (gain 100 < Basisertrag 178.5)
+    // tax = 100 × 0.26375 × 0.85 = 22.418750
+    const p = newPortfolio(10_000);
+    for (let i = 0; i < 12; i++) growMonth(p, Math.pow(1.01, 1 / 12) - 1);
+    const tax = vorabpauschaleTax(p, tp, 10_000);
+    expect(tax).toBeCloseTo(100 * 0.26375 * 0.85, 4);
+  });
+
+  it('loss years pay nothing', () => {
+    const p = newPortfolio(10_000);
+    for (let i = 0; i < 12; i++) growMonth(p, Math.pow(0.95, 1 / 12) - 1);
+    expect(vorabpauschaleTax(p, tp, 10_000)).toBe(0);
+  });
+
+  it('tax is proportional to the portfolio size (sub-linear vs compounding wealth)', () => {
+    const mk = (start: number) => {
+      const p = newPortfolio(start);
+      for (let i = 0; i < 12; i++) growMonth(p, Math.pow(1.08, 1 / 12) - 1);
+      return vorabpauschaleTax(p, tp, start);
+    };
+    const t1 = mk(10_000);
+    const t2 = mk(20_000);
+    expect(t1).toBeGreaterThan(0);
+    expect(t2).toBeCloseTo(2 * t1, 4); // linear in value ⇒ ~1.8 %/yr, far below the 8 % growth
+    expect(t1 / 10_000).toBeLessThan(0.02);
+  });
+
+  it('runScenario: enabling the Vorabpauschale strictly reduces later wealth', () => {
+    const mk = (vorab: number) => {
+      const s = defaultState();
+      s.values.vorabpauschale = vorab;
+      s.values.rent_cold = 500; // owning costs more → freed cash flows into the rent portfolio
+      return runScenario(s);
+    };
+    const off = mk(0);
+    const on = mk(1);
+    expect(on.rentPortfolio[on.rentPortfolio.length - 1])
+      .toBeLessThan(off.rentPortfolio[off.rentPortfolio.length - 1]);
+    expect(on.buyPortfolio[on.buyPortfolio.length - 1])
+      .toBeLessThanOrEqual(off.buyPortfolio[off.buyPortfolio.length - 1]);
   });
 });
