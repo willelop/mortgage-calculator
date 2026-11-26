@@ -291,6 +291,18 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   Plotly; revisit after Priority 1's mobile measurements. Weigh losing
   zoom/variants against mobile load; the chart calls are already isolated in
   `src/ui/Plot.tsx`, which keeps this swappable.
+  (Decision 2025-08 — **keep Plotly, do not replace now.** Measured: the
+  plotly chunk is 4.68 MB raw / **1.41 MB gzip**, and it is a *lazy* chunk —
+  `Plot.tsx` dynamic-imports it only when the user first sees results, so
+  the initial page ships ~430 KB gzip (index 243 KB + react-vendor 158 KB
+  + css 222 KB raw). The service worker (4d) caches it after the first
+  visit. The app's core value is interacting with the charts (zoom into
+  net-worth curves, hover exact years, percentile bands, histograms);
+  replacements (uPlot ~40 KB, Chart.js, Recharts) would require rewriting
+  six chart types incl. histogram + bands and drop features users are
+  already using — a bad trade for a one-time, cacheable download.
+  Revisit trigger: evidence that mobile users drop off before the first
+  results render, or a lightweight lib covering all six chart types.)
 
 ## Explicit non-goals (do not implement; they would break the product promise)
 
