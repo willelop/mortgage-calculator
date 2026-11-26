@@ -196,6 +196,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   "Run", assert a `.stat` value changes, no console errors. CI: job after
   `build` in `deploy.yml`, against `vite preview`, main branch only. Keep
   Plotly-heavy assertions out (canvas rendering is flaky in CI).
+  (Done 2025-08: `e2e/smoke.spec.ts` — header assertion, deterministic Run
+  click (scoped to the run group; the run is too fast to observe the
+  "Running…" label), ≥5 filled `.stat-value` cards, console/pageerror-free.
+  `playwright.config.ts` webServer = `vite preview` on 4173; vitest
+  excludes `e2e/**`. `deploy.yml` gained an `e2e` job (chromium install +
+  test, main only) and deploy now `needs: [build, e2e]`. Locally:
+  `npm run test:e2e`.)
 - **3b. Share-link compression** (was 20): in `src/engine/state-io.ts`, when
   `toShareUrl` exceeds ~1500 chars, deflate-raw + base64 via
   `CompressionStream` with a plain fallback; round-trip unit test for both

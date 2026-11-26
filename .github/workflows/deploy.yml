@@ -45,9 +45,27 @@ jobs:
         with:
           path: dist
 
-  deploy:
+  # E2E smoke (roadmap 3a): Playwright against `vite preview` (the built dist).
+  # Runs after build, main branch only, no Plotly-heavy assertions.
+  e2e:
     needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+
+  deploy:
+    needs: [build, e2e]
     # Only main touches the live site; any other branch still gets build+test.
+    # On main, deploy additionally waits for the e2e smoke to pass.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
