@@ -121,6 +121,14 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Gesamte Laufzeit',
     help: 'Gesamte Lebensdauer des Darlehens; die Anschlussrate tilgt über die verbleibende Restlaufzeit.',
   },
+  tilgung_shape: {
+    label: 'Tilgungsform',
+    help: 'Wie das Darlehen tilgt: Annuität = konstante Rate (deutscher Standard), linear = konstante Tilgung mit fallender Rate, Tilgungsfreijahre = anfangs nur Zinsen, danach Wiederannuität über die Restlaufzeit, endfällig = nur Zinsen, Gesamtbetrag am Ende fällig (passt zu Bauspar-/KfW-Kombinationen). Der Ratenmodus oben gilt nur für die Annuität.',
+  },
+  grace_years: {
+    label: 'Tilgungsfreijahre',
+    help: 'Anzahl der Jahre am Anfang des Darlehens, in denen nur Zinsen gezahlt werden und die Restschuld sich nicht verringert. Danach wird die Rate über die verbleibende Laufzeit neu Annuität berechnet. Üblich bei Neubau während der Bau- oder Vermietungsphase.',
+  },
   sondertilgung_pct: {
     label: 'Sondertilgung — % des Darlehens / Jahr',
     help: 'Zusätzliche Tilgung in % des ursprünglichen Darlehens pro Jahr. Standard 0 = keine Sondertilgung; in Optionen aktivieren.',
@@ -240,6 +248,10 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
 const SELECT_OPTION_DE: Record<string, string> = {
   'tilgung_mode:0': 'Anfangstilgung (% p. a.)',
   'tilgung_mode:1': 'Monatsrate (€/Monat)',
+  'tilgung_shape:0': 'Annuität (konstante Rate)',
+  'tilgung_shape:1': 'Linear (konstante Tilgung)',
+  'tilgung_shape:2': 'Tilgungsfreijahre',
+  'tilgung_shape:3': 'Endfällig (nur Zinsen)',
   'hausgeld_indexation:0': 'Folgt der Inflation',
   'hausgeld_indexation:1': 'Fix (keine Anpassung)',
   'hausgeld_indexation:2': 'Eigene Rate',

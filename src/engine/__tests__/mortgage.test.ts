@@ -58,6 +58,93 @@ describe('mortgageSchedule — hand-computed reference (100 k€, 3.6 %, 2 % Til
   });
 });
 
+describe('mortgageSchedule — repayment shapes (roadmap 2a)', () => {
+  const base = {
+    loan: 100_000,
+    fixedRatePct: 3.6,
+    fixedYears: 10,
+    followupRatePct: 3.6,
+    tilgungPct: 2,
+    termYears: 30,
+    sondertilgungPct: 0,
+    sondertilgungEur: 0,
+    months: 360,
+  };
+
+  describe('linear (constant principal)', () => {
+    it('amortizes loan/term per month; payment declines; fully repaid at term end', () => {
+      const res = mortgageSchedule({ ...base, shape: 'linear', tilgungPct: 0 });
+      const expectedPrincipal = 100_000 / 360;
+      // constant principal in the first months…
+      expect(res.principal[0]).toBeCloseTo(expectedPrincipal, 4);
+      expect(res.principal[59]).toBeCloseTo(expectedPrincipal, 4);
+      // …payment = interest (declining) + constant principal
+      expect(res.payment[0]).toBeCloseTo(300 + expectedPrincipal, 4);
+      expect(res.payment[1]).toBeLessThan(res.payment[0]);
+      expect(res.balance[360]).toBeCloseTo(0, 2);
+    });
+
+    it('keeps the constant principal across the fixed-period boundary (no re-anchor)', () => {
+      const res = mortgageSchedule({ ...base, shape: 'linear', tilgungPct: 0, followupRatePct: 5.0 });
+      expect(res.principal[119]).toBeCloseTo(res.principal[120], 6);
+      expect(res.principal[121]).toBeCloseTo(100_000 / 360, 4);
+    });
+  });
+
+  describe('grace years (Tilgungsfreijahre)', () => {
+    it('pays interest only during grace; balance unchanged; re-annuitizes afterwards', () => {
+      const res = mortgageSchedule({ ...base, shape: 'grace', graceYears: 5, tilgungPct: 2 });
+      // months 0..59: payment == interest, no principal
+      expect(res.payment[0]).toBeCloseTo(300, 4);
+      expect(res.principal[0]).toBeCloseTo(0, 6);
+      expect(res.balance[60]).toBeCloseTo(100_000, 4);
+      // month 60 = first amortizing month: annuity over the remaining 25 years
+      const expected = (100_000 * (0.036 / 12)) / (1 - Math.pow(1 + 0.036 / 12, -(360 - 60)));
+      expect(res.payment[60]).toBeCloseTo(expected, 4);
+      expect(res.principal[60]).toBeGreaterThan(0);
+      expect(res.balance[360]).toBeCloseTo(0, 2);
+    });
+
+    it('grace longer than the fixed period: amortization starts only after grace ends', () => {
+      const res = mortgageSchedule({ ...base, shape: 'grace', graceYears: 12, fixedYears: 10, followupRatePct: 5.0, tilgungPct: 3 });
+      expect(res.balance[120]).toBeCloseTo(100_000, 4); // still interest-only after the re-fix
+      expect(res.payment[120]).toBeGreaterThan(300); // re-annuitized at 5 % over 18y
+      expect(res.balance[360]).toBeCloseTo(0, 2);
+    });
+  });
+
+  describe('bullet (endfällig, interest only)', () => {
+    it('balance never shrinks and payment equals interest', () => {
+      const res = mortgageSchedule({ ...base, shape: 'bullet', tilgungPct: 0 });
+      expect(res.balance[0]).toBeCloseTo(100_000, 4);
+      expect(res.balance[360]).toBeCloseTo(100_000, 4);
+      for (const m of [0, 119, 120, 359]) {
+        expect(res.principal[m]).toBeCloseTo(0, 6);
+        expect(res.payment[m]).toBeCloseTo(res.interest[m], 6);
+      }
+    });
+
+    it('ignores the annuity re-anchor at the fixed-period end', () => {
+      const res = mortgageSchedule({ ...base, shape: 'bullet', followupRatePct: 5.0 });
+      expect(res.payment[119]).toBeCloseTo(300, 4);
+      expect(res.payment[120]).toBeCloseTo(100_000 * (0.05 / 12), 4); // interest at the new rate only
+    });
+
+    it('total interest exceeds the annuity shape (compounding drag of no repayment)', () => {
+      const annuity = mortgageSchedule(base);
+      const bullet = mortgageSchedule({ ...base, shape: 'bullet', tilgungPct: 0 });
+      expect(bullet.totalInterest).toBeGreaterThan(annuity.totalInterest);
+    });
+  });
+
+  it('omitted shape behaves exactly like the annuity default (backward compatibility)', () => {
+    const implicit = mortgageSchedule(base);
+    const explicit = mortgageSchedule({ ...base, shape: 'annuity' });
+    expect(implicit.balance).toEqual(explicit.balance);
+    expect(implicit.payment).toEqual(explicit.payment);
+  });
+});
+
 describe('yearlyAmortization', () => {
   const base = {
     loan: 100_000,

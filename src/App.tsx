@@ -139,8 +139,10 @@ export default function App(): JSX.Element {
   }, [state]);
 
   // payment-mode guard: desired payment must exceed the initial interest
+  // (annuity shape only — grace years are interest-only by design)
   const paymentWarning = useMemo(() => {
     if (Math.round(num(state, 'tilgung_mode')) !== 1) return null;
+    if (Math.round(num(state, 'tilgung_shape')) !== 0) return null;
     const loan = loanAmountFor(state);
     if (loan <= 0) return null;
     const price = num(state, 'property_price');

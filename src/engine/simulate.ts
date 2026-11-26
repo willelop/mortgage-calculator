@@ -111,7 +111,9 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const effFixedRatePct = v('fixed_rate') + ltvSurcharge;
 
   // Initial repayment: directly as % p.a., or derived from a desired monthly payment
-  const paymentMode = Math.round(v('tilgung_mode')) === 1;
+  const shapeNum = Math.round(v('tilgung_shape') ?? 0);
+  const shape = (['annuity', 'linear', 'grace', 'bullet'] as const)[shapeNum] ?? 'annuity';
+  const paymentMode = shapeNum === 0 && Math.round(v('tilgung_mode')) === 1;
   let tilgungPct = v('initial_tilgung');
   if (paymentMode && loanAmount > 0) {
     const mp = v('monthly_payment');
@@ -119,6 +121,10 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     // payment − interest = amortization; expressed as % of the original loan p.a.
     tilgungPct = mp > interestOnly ? ((mp - interestOnly) * 12) / loanAmount * 100 : 0;
   }
+  // Display value of the effective Anfangstilgung for non-annuity shapes
+  const termYears = Math.round(v('loan_term_years'));
+  if (shapeNum === 1) tilgungPct = termYears > 0 ? 100 / termYears : 0; // linear: constant principal
+  if (shapeNum === 3) tilgungPct = 0; // bullet: no amortization
 
   const mortgage = mortgageSchedule({
     loan: loanAmount,
@@ -126,10 +132,12 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     fixedYears: Math.round(v('fixed_years')),
     followupRatePct: v('followup_rate') + ltvSurcharge,
     tilgungPct,
-    termYears: Math.round(v('loan_term_years')),
+    termYears,
     sondertilgungPct: v('sondertilgung_pct'),
     sondertilgungEur: v('sondertilgung_eur'),
     months,
+    shape,
+    graceYears: Math.round(v('grace_years') ?? 5),
   });
 
   const fixedMonths = Math.max(0, Math.round(v('fixed_years')) * 12);

@@ -25,6 +25,9 @@ export interface MortgageResult {
   paidUntil: number;
 }
 
+/** How the loan amortizes (roadmap 2a). */
+export type TilgungShape = 'annuity' | 'linear' | 'grace' | 'bullet';
+
 export interface MortgageInput {
   loan: number;
   fixedRatePct: number;
@@ -35,6 +38,10 @@ export interface MortgageInput {
   sondertilgungPct: number; // of original loan, per year
   sondertilgungEur: number; // per year
   months: number;
+  /** repayment shape; default 'annuity' (German standard, constant payment) */
+  shape?: TilgungShape;
+  /** for shape 'grace': interest-only years at the start */
+  graceYears?: number;
 }
 
 export function mortgageSchedule(input: MortgageInput): MortgageResult {
@@ -42,6 +49,8 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
     loan, fixedRatePct, fixedYears, followupRatePct,
     tilgungPct, termYears, sondertilgungPct, sondertilgungEur, months,
   } = input;
+  const shape: TilgungShape = input.shape ?? 'annuity';
+  const graceMonths = shape === 'grace' ? Math.max(0, Math.round((input.graceYears ?? 0) * 12)) : 0;
 
   const balance: number[] = new Array(months + 1);
   const interest: number[] = new Array(months);
@@ -55,8 +64,15 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
   const fixedMonths = Math.max(0, Math.round(fixedYears * 12));
   const extraPerYear = (loan * sondertilgungPct) / 100 + sondertilgungEur;
 
+  // Linear shape: constant principal per month over the full term (payment declines).
+  const linearPrincipal = shape === 'linear'
+    ? balance[0] / Math.max(1, termYears * 12)
+    : 0;
+
   // German style: payment = monthly interest + monthly share of tilgung on the ORIGINAL loan
-  let pay = balance[0] > 0 ? balance[0] * rFixed + (loan * tilgungPct) / 100 / 12 : 0;
+  let pay = balance[0] > 0 && shape !== 'bullet'
+    ? balance[0] * rFixed + (loan * tilgungPct) / 100 / 12
+    : 0;
 
   let totalInterest = 0;
   let paidUntil = -1;
@@ -72,15 +88,29 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
     }
     paidUntil = m;
 
-    // Phase transition at the end of the fixed-rate period
-    if (m > 0 && m === fixedMonths) {
+    const r = m < fixedMonths ? rFixed : r2;
+
+    // Phase transitions: end of fixed-rate period, and (grace shape) end of the
+    // interest-only years. Both re-anchor the payment as an annuity over the
+    // remaining term. Linear keeps its constant principal; bullet never amortizes.
+    const atFixedEnd = m > 0 && m === fixedMonths
+      && (shape === 'annuity' || (shape === 'grace' && m >= graceMonths));
+    const atGraceEnd = m > 0 && m === graceMonths && graceMonths !== fixedMonths;
+    if (atFixedEnd || atGraceEnd) {
       const remainingMonths = Math.max(1, termYears * 12 - m);
-      pay = annuityPayment(b, r2, remainingMonths);
+      pay = annuityPayment(b, r, remainingMonths);
     }
 
-    const r = m < fixedMonths ? rFixed : r2;
-    const int = b * r;
-    const princip = Math.min(Math.max(0, pay - int), b);
+    let int = b * r;
+    let princip: number;
+    if (shape === 'bullet' || (shape === 'grace' && m < graceMonths)) {
+      princip = 0;
+    } else if (shape === 'linear') {
+      princip = Math.min(linearPrincipal, b);
+      pay = int + princip;
+    } else {
+      princip = Math.min(Math.max(0, pay - int), b);
+    }
 
     interest[m] = int;
     principal[m] = princip;

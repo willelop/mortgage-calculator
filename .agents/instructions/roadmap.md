@@ -119,12 +119,16 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
 `.agents/skills/add-new-parameter/`), engine second (`src/engine/mortgage.ts`
 / `invest.ts`), UI third, tests last. Follows the pattern set by item 5.
 
-- **2a. Repayment shapes** (was 11): `tilgung_shape` select — `annuity`
-  (default) | `linear` | `grace` (with `grace_years` count param) | `bullet`.
-  Implement in `mortgage.ts`'s year-step. Realism tests: bullet never
-  amortizes; linear amortization is linear in the outstanding balance; grace
-  years pay interest only and re-annuitize afterwards. UI: one select in the
-  Mortgage tab, extra count field only when `grace`.
+- **2a. Repayment shapes** (was 11)
+  (Done 2026-11: `tilgung_shape` select — annuity (default, unchanged) /
+  linear / grace years with `grace_years` / bullet — implemented in
+  `mortgageSchedule` (`shape` + `graceYears` inputs) with re-anchoring at the
+  grace end and the fixed-period end, guarded so grace can outlast the fixed
+  period. `monthly_payment` mode now applies to the annuity shape only, and
+  the payment warning is suppressed for non-annuity shapes; effective
+  Anfangstilgung shown as 100/term for linear, 0 for bullet. 9 new shape
+  tests in `mortgage.test.ts` incl. backward compatibility; DE strings in
+  `params-de.ts`.)
 - **2b. `Disagio`** (was 12): `disagio_pct` 0–5 (step 0.25). Payment loading:
   loan × (1 − disagio/100). Show effective vs. nominal rate in Results
   (`src/format.ts` helpers only). Test: 2 % Disagio on the default state
