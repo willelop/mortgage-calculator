@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Popover, Checkbox, Button } from '@mantine/core';
 import { PARAM_DEFS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, groupLabel, labelOf, helpOf } from '../engine/params';
 import { useLang } from '../i18n';
+import { HelpTip } from './HelpTip';
 
 /** parameter groups shown on the main form (correlations have no on/off) */
 const MAIN_GROUPS = GROUP_ORDER.filter((g) => g !== 'correlations');
@@ -87,21 +88,5 @@ export function OptionsMenu({ state, onChange }: Props): JSX.Element {
         )}
       </Popover>
     </div>
-  );
-}
-
-/** "?" mark; stops the click so the surrounding menu label doesn't toggle. */
-function HelpTip({ text }: { text: string }): JSX.Element {
-  return (
-    <span
-      className="help-tip"
-      tabIndex={0}
-      role="note"
-      aria-label={text}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-    >
-      <span className="help-mark" aria-hidden>?</span>
-      <span className="help-tooltip">{text}</span>
-    </span>
   );
 }

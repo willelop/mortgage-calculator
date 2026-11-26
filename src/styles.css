@@ -678,25 +678,36 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
 /* --- mobile phones ------------------------------------------------------------------------------------ */
 
 @media (max-width: 720px) {
-  .app { padding: 14px 12px 44px; }
+  .app { padding: 14px 12px 104px; } /* extra bottom room for the docked run bar */
 
-  header h1 { font-size: 1.2rem; }
+  header h1 { font-size: 1.15rem; }
   header .de { font-size: 0.85rem; }
   .subtitle { font-size: 0.8rem; }
   .brand { gap: 10px; }
-  .brand .logo { width: 42px; height: 42px; border-radius: 10px; }
+  .brand .logo { width: 38px; height: 38px; border-radius: 9px; }
 
-  .toolbar { gap: 6px; }
+  .toolbar { gap: 6px; padding-bottom: 8px; }
   .toolbar button, .toolbar select {
     font-size: 0.82rem;
     padding: 6px 8px;
   }
+  /* the preset list is long — keep it from pushing buttons onto extra rows */
+  .toolbar select { max-width: 150px; }
 
+  /* docked action bar: the two Run buttons live at the thumb side of the screen */
   .runs-bar {
-    position: static;        /* sticky bar eats vertical space on small screens */
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    margin: 0;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+    z-index: 30;
     gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   }
   .runs-bar .hint { display: none; }
+  .run-group-label { display: none; }
+  .run-group { border: none; background: transparent; padding: 0; }
   .runs-bar button { flex: 1 1 auto; font-size: 0.85rem; }
 
   .grid { grid-template-columns: 1fr; gap: 14px; }
@@ -711,7 +722,14 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   .param-input input[type='number'] { width: 110px; }
   .param-mc input[type='number'] { width: 90px; }
 
-  .param-tabs .mantine-Tabs-tab { font-size: 0.78rem; padding-inline: 8px; }
+  /* swipe the 8 tabs horizontally instead of wrapping into rows */
+  .param-tabs .mantine-Tabs-tabList {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .param-tabs .mantine-Tabs-tabList::-webkit-scrollbar { display: none; }
+  .param-tabs .mantine-Tabs-tab { font-size: 0.82rem; padding-inline: 10px; white-space: nowrap; }
 
   .keynumbers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat .stat-value { font-size: 1.1rem; }
@@ -721,7 +739,12 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
 
   .csv-actions button { flex: 1 1 auto; }
 
-  /* tighter tooltips: keep them inside the viewport */
+  /* comfortable touch targets; exempt the inline "?" mark */
+  button, select, .mc-toggle, .opt-item { min-height: 44px; }
+  .help-tip { min-height: 0; }
+  .help-tip .help-mark { min-height: 0; }
+
+  /* tighter tooltips: keep them inside the viewport (right-aligned near the edge) */
   .help-tip .help-tooltip {
     left: auto;
     right: 0;
@@ -729,6 +752,14 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
     max-width: 210px;
   }
   .help-tip .help-tooltip::after { left: auto; right: 6px; transform: none; }
+}
+
+/* very narrow phones: compact further */
+@media (max-width: 480px) {
+  header h1 { font-size: 1.05rem; }
+  .brand .logo { width: 36px; height: 36px; }
+  .subtitle { display: none; } /* the info lives in the README + footer */
+  .stat .stat-value { font-size: 1rem; }
 }
 
 /* honor reduced-motion */

@@ -27,7 +27,14 @@ referenced `.agents/instructions/*.md` before touching those areas.
 
 ---
 
-## Priority 1 — Mobile-first UI redesign  ← the next improvement
+## Priority 1 — Mobile-first UI redesign
+
+(Done 2026-11: docked bottom run bar with safe-area padding, compact header
+with hidden subtitle under 480 px, horizontally swipeable parameter tabs,
+phone-capped chart heights in `Plot.tsx` (≤ 300 px under 720 px viewport),
+44 px touch targets, 320 px sweep clean, and the two drifting HelpTip copies
+consolidated into `src/ui/HelpTip.tsx` — the Options menu copy was still the
+old hover-only one. English test suite unchanged and green; 74/74 tests.)
 
 The layout is still desktop-first: on a 390×844 phone the header wraps into a
 tall block, the sticky runs bar eats vertical space, 8 parameter tabs cramp

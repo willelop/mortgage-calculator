@@ -13,6 +13,9 @@ interface PlotProps {
 export function Plot({ data, layout, height = 380 }: PlotProps): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const key = JSON.stringify(data) + JSON.stringify(layout) + document.documentElement.dataset.theme;
+  // phones: cap the chart height so a figure never exceeds the viewport
+  const compact = typeof window !== 'undefined' && window.innerWidth < 720;
+  const effectiveHeight = compact ? Math.min(height, 300) : height;
 
   useEffect(() => {
     let alive = true;
@@ -38,5 +41,5 @@ export function Plot({ data, layout, height = 380 }: PlotProps): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return <div ref={ref} style={{ height }} />;
+  return <div ref={ref} style={{ height: effectiveHeight }} />;
 }

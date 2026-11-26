@@ -297,7 +297,7 @@ function FanChart({
 
   return (
     <Plot
-      height={460}
+      height={340}
       data={[
         // buy bands
         bandStart(mc.buyBands.p10, de ? 'kaufen 10–90' : 'buy 10–90', 'rgba(26,127,75,0.15)'),
