@@ -114,6 +114,8 @@ export const PARAM_DEFS: ParamDef[] = [
 
   // ---------- Mortgage ----------
   { key: 'equity', label: 'Equity / down payment available', group: 'mortgage', kind: 'eur', default: 150_000, min: 0, max: 5_000_000, step: 5000, toggleable: false, help: 'All liquid capital committed to the purchase (covers costs + part of price). Unused remainder stays invested.' },
+  { key: 'couple_mode', label: 'Couple mode (two taxpayers)', group: 'mortgage', kind: 'switch', default: 0, toggleable: false, help: 'Explicitly switch to a joint assessment for two people: the Sparerpauschbetrag doubles (see below) and a second equity pool becomes available. The model still assumes one shared pool and one income stream — deliberate simplification.' },
+  { key: 'equity_second', label: 'Second partner — equity', group: 'mortgage', kind: 'eur', default: 0, min: 0, max: 5_000_000, step: 5000, toggleable: false, visibleWhen: (v) => Math.round(v['couple_mode'] ?? 0) === 1, help: 'Additional liquid capital the second partner brings. Added to the down payment; unused remainder stays invested.' },
   { key: 'fixed_rate', label: 'Fixed interest rate', group: 'mortgage', kind: 'pct', default: 3.5, min: 0, max: 15, step: 0.05, mcable: true, help: 'Nominal annual rate during the Zinsbindung (fixed-rate) period.' },
   { key: 'disagio_pct', label: 'Disagio (upfront fee)', group: 'mortgage', kind: 'pct', default: 0, min: 0, max: 5, step: 0.25, toggleable: false, help: 'One-off fee paid to the bank for a lower rate, % of the nominal loan (0 = none). The bank disburses only (1 − Disagio) of the loan, so the shortfall is financed within the loan; the effective rate (shown in the results) is higher than the nominal rate. Rule of thumb: 1 % Disagio ≈ 0.15–0.25 pp lower nominal rate — check whether the effective rate is worth paying cash today.' },
   { key: 'fixed_years', label: 'Fixed-rate period (Zinsbindung)', group: 'mortgage', kind: 'count', default: 10, min: 1, max: 30, step: 1, mcable: true, help: 'Years the fixed rate is guaranteed.' },
@@ -194,6 +196,8 @@ export const ICON: Record<string, string> = {
   hausgeld_index_rate: '📈',
   // mortgage
   equity: '💰',
+  couple_mode: '👥',
+  equity_second: '🤝',
   fixed_rate: '💹',
   disagio_pct: '🧾',
   fixed_years: '⏳',

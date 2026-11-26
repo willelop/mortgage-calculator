@@ -98,6 +98,26 @@ describe('runScenario — smoke & invariants', () => {
       .toBeCloseTo(a.buyCumCost[a.buyCumCost.length - 1], 0);
   });
 
+  it('couple mode doubles the Sparerpauschbetrag and pools the second equity (roadmap 2f)', () => {
+    // second equity pool reduces the loan
+    const single = defaultState();
+    const couple = defaultState();
+    couple.values.couple_mode = 1;
+    couple.values.equity_second = 50_000;
+    expect(loanAmountFor(couple)).toBeCloseTo(loanAmountFor(single) - 50_000, 4);
+    // liquidation tax on a large portfolio: allowance 2000 vs 1000
+    const rich = defaultState();
+    rich.values.capital_stocks = 1_000_000;
+    rich.values.capital_bonds = 0;
+    rich.values.rent_cold = 500; // keep the rent portfolio growing
+    rich.values.equity = 400_000; // buy outright → residual equity stays invested
+    const richCouple = { ...rich, values: { ...rich.values, couple_mode: 1 } };
+    const rSingle = runScenario(rich);
+    const rCouple = runScenario(richCouple);
+    // couple pays strictly less liquidation tax on the same embedded gains (rent branch)
+    expect(rCouple.liquidationTaxRent).toBeLessThan(rSingle.liquidationTaxRent);
+  });
+
   it('kaution is included in the rent branch at t=0', () => {
     const s = defaultState();
     const res = runScenario(s);

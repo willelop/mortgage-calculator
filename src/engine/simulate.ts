@@ -95,7 +95,8 @@ export function transactionCostsFor(state: ParamState): number {
  *  by the Disagio: the bank disburses only (1 − Disagio) of the nominal loan, so
  *  the shortfall is financed within the loan itself. */
 export function loanAmountFor(state: ParamState): number {
-  const base = Math.max(0, num(state, 'property_price') + transactionCostsFor(state) - num(state, 'equity'));
+  const equity = num(state, 'equity') + (switchOn(state, 'couple_mode') ? num(state, 'equity_second') : 0);
+  const base = Math.max(0, num(state, 'property_price') + transactionCostsFor(state) - equity);
   const disagio = Math.min(Math.max(num(state, 'disagio_pct'), 0), 95) / 100;
   return disagio > 0 ? base / (1 - disagio) : base;
 }
@@ -111,7 +112,7 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   // --- Purchase side -------------------------------------------------------
   const price = v('property_price');
   const transactionCosts = transactionCostsFor(state);
-  const equity = v('equity');
+  const equity = v('equity') + (sw('couple_mode') ? v('equity_second') : 0);
   const loanBase = Math.max(0, price + transactionCosts - equity);
   // Disagio: bank pays out only (1 − d) of the nominal loan; the shortfall is
   // financed within the loan (borrower owes and pays interest on the full amount).
@@ -171,7 +172,8 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   const taxP: TaxParams = {
     taxRate: v('capital_gains_tax_rate') / 100,
     teilfreistellung: v('teilfreistellung_rate') / 100,
-    allowance: v('sparerpauschbetrag'),
+    // couple mode (roadmap 2f): joint assessment doubles the Sparerpauschbetrag
+    allowance: v('sparerpauschbetrag') * (sw('couple_mode') ? 2 : 1),
   };
 
   const capStocks = num(state, 'capital_stocks');

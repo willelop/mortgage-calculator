@@ -105,6 +105,14 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Energieeffizienzklasse (Energieausweis)',
     help: 'Aus dem Energieausweis. Steuert den Pflegezuschlag unten (ältere Heizung/Fassade = höherer Unterhalt) und sollte das Sanierungsbudget lenken.',
   },
+  couple_mode: {
+    label: 'Paar-Modus (zusammen veranlagt)',
+    help: 'Explizit auf zwei gemeinsam veranlagte Personen umschalten: Der Sparerpauschbetrag verdoppelt sich (siehe unten) und ein zweites Eigenkapitalpolster steht zur Verfügung. Das Modell bleibt ein gemeinsames Polster mit einem Einkommensstrom — bewusste Vereinfachung.',
+  },
+  equity_second: {
+    label: 'Zweiter Partner — Eigenkapital',
+    help: 'Zusätzliches flüssiges Kapital des zweiten Partners. Erhöht das Eigenkapital; nicht verbrauchter Rest bleibt angelegt.',
+  },
   energy_upkeep: {
     label: 'Instandhaltungszuschlag nach Energieklasse',
     help: 'Erhöht die Instandhaltungsrücklage klassenabhängig: A/B +0 pp, C +0,1, D +0,2, E +0,3, F +0,4, G +0,5, H +0,6 pp des Kaufpreises pro Jahr — schlechte Klassen kosten spürbar mehr.',

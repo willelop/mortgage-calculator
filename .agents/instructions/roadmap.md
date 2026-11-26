@@ -181,6 +181,11 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   second Sparerpauschbetrag (2 000 € instead of 1 000 €), optional second
   equity pool. The single-income/pool assumption is intentional; do not
   widen silently.
+  (Done 2025-08: `couple_mode` switch (default off, Options menu, icon 👥)
+  doubles the Sparerpauschbetrag and reveals the `equity_second` pool
+  (added to equity in `runScenario` and `loanAmountFor`); the shared-pool /
+  single-income simplification stays — stated in the help text. Test
+  covers the loan delta and the lower liquidation tax; suite 94/94.)
 
 ---
 
