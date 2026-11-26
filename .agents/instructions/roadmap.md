@@ -280,6 +280,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
 - **5a. Split `App.tsx`** (was 10): 426 lines and growing — extract
   `Toolbar`, `RunsBar`, `Warnings` when touched next; do not split for its
   own sake.
+  (Done 2025-08: after the toolbar/compare/print/PWA work grew App.tsx to
+  508 lines, the three blocks were extracted as planned: `src/ui/Toolbar.tsx`
+  (language/theme/presets/share/save/reset/Options/print/compare — compare
+  select now doubles as "end comparison" via its value), `src/ui/RunsBar.tsx`
+  (deterministic + MC run controls, pure presentational) and
+  `src/ui/Warnings.tsx` (the three guardrail divs). App.tsx back to 426
+  lines owning state, effects and computation only. Full gate + e2e green.)
 - **5b. Replace Plotly** (was 16b): the ~4.6 MB lazy chunk is inherent to
   Plotly; revisit after Priority 1's mobile measurements. Weigh losing
   zoom/variants against mobile load; the chart calls are already isolated in

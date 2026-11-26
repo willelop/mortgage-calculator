@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MantineProvider, Button, ActionIcon, SegmentedControl, NumberInput } from '@mantine/core';
+import { MantineProvider, Button, SegmentedControl } from '@mantine/core';
 import { mantineTheme } from './ui/mantine-theme';
 import { ParamState, defaultState, switchOn, num } from './engine/params';
 import { runScenario, ScenarioResult, loanAmountFor } from './engine/simulate';
@@ -8,15 +8,17 @@ import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
 import { PrintOnePager } from './ui/PrintOnePager';
-import { OptionsMenu } from './ui/OptionsMenu';
 import { Results } from './ui/Results';
+import { Toolbar } from './ui/Toolbar';
+import { RunsBar } from './ui/RunsBar';
+import { Warnings } from './ui/Warnings';
 import { Logo } from './ui/Logo';
 import { initialTheme, applyTheme, Theme } from './theme';
 import { fmtEur } from './format';
 import { useLang, setLang } from './i18n';
 import {
-  applyPreset, PRESETS, fromLocation, fromLocationAsync, toShareUrlAsync, presetName, presetDescription,
-  localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
+  applyPreset, PRESETS, fromLocation, fromLocationAsync, toShareUrlAsync,
+  localStorageSave, localStorageLoad,
   autosaveState, loadAutosave,
 } from './engine/state-io';
 
@@ -287,6 +289,16 @@ export default function App(): JSX.Element {
     if (s) setState(s);
   };
 
+  // scenario comparison (roadmap 4c): empty name ends the comparison
+  const handleCompare = (name: string) => {
+    if (!name) {
+      setCompareName(null);
+      return;
+    }
+    setCompareName(name);
+    setMainTab('results');
+  };
+
   // Plotly measures its container while the results column is hidden (width 0);
   // nudge the responsive charts after switching to Results so they fill the column.
   useEffect(() => {
@@ -311,138 +323,44 @@ export default function App(): JSX.Element {
             </p>
           </div>
         </div>
-        <div className="toolbar">
-          <ActionIcon
-            variant="default"
-            size="lg"
-            radius="xl"
-            onClick={() => setLang(de ? 'en' : 'de')}
-            title={de ? 'Switch to English' : 'Zu Deutsch wechseln'}
-            aria-label={de ? 'Switch to English' : 'Zu Deutsch wechseln'}
-          >
-            {de ? '🇬🇧' : '🇩🇪'}
-          </ActionIcon>
-          <ActionIcon
-            variant="default"
-            size="lg"
-            radius="xl"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            aria-label="Toggle dark mode"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </ActionIcon>
-          <label>
-            {de ? 'Voreinstellung' : 'Preset'}
-            <select value={preset} onChange={(e) => applyPresetByName(e.target.value)}>
-              <option value="">{de ? '— wählen —' : '— choose —'}</option>
-              {PRESETS.map((p) => (
-                <option key={p.name} value={p.name} title={presetDescription(p, lang)}>{presetName(p, lang)}</option>
-              ))}
-              <optgroup label={de ? 'Gespeicherte Szenarien' : 'Saved scenarios'}>
-                {localStorageNames().map((n) => (
-                  <option key={n} value={`__local:${n}`}>{n}</option>
-                ))}
-              </optgroup>
-            </select>
-          </label>
-          <Button variant="default" onClick={share}>🔗 {de ? 'Link teilen' : 'Share link'}</Button>
-          <Button variant="default" onClick={saveScenario}>💾 {de ? 'Speichern' : 'Save'}</Button>
-          <Button variant="light" color="red" onClick={() => {
-              localStorageNames().forEach(localStorageDelete);
-            }}>
-            🗑 {de ? 'Gespeichertes löschen' : 'Clear saved'}
-          </Button>
-          <Button variant="default" onClick={() => setState(defaultState())}>↺ {de ? 'Auf Standardwerte zurücksetzen' : 'Reset to defaults'}</Button>
-          <OptionsMenu state={state} onChange={setState} />
-          <Button variant="default" onClick={() => window.print()}>🖨 {de ? 'Drucken / PDF' : 'Print / PDF'}</Button>
-          <label>
-            {de ? '⚖ Vergleichen' : '⚖ Compare'}
-            <select
-              value=""
-              onChange={(e) => {
-                if (e.target.value) {
-                  setCompareName(e.target.value);
-                  setMainTab('results');
-                }
-              }}
-              aria-label={de ? 'Mit gespeichertem Szenario vergleichen' : 'Compare with a saved scenario'}
-              title={localStorageNames().length === 0 ? (de ? 'Erst ein Szenario speichern' : 'Save a scenario first') : undefined}
-            >
-              <option value="">{de ? '— Szenario wählen —' : '— choose scenario —'}</option>
-              {localStorageNames().map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <Toolbar
+          lang={lang}
+          theme={theme}
+          state={state}
+          preset={preset}
+          compareName={compareName}
+          onToggleLang={() => setLang(de ? 'en' : 'de')}
+          onToggleTheme={toggleTheme}
+          onPreset={applyPresetByName}
+          onShare={share}
+          onSave={saveScenario}
+          onReset={() => setState(defaultState())}
+          onStateChange={setState}
+          onCompare={handleCompare}
+        />
         {toast && <div className="toast">{toast}</div>}
       </header>
 
-      {!freedCashOn && (
-        <div className="warning">
-          ⚠️ <strong>“{de ? 'Gesparte Differenz mietend anlegen' : 'Invest freed cash flow while renting'}” {de ? 'ist ausgeschaltet.' : 'is switched off.'}</strong>{' '}
-          {de
-            ? 'Der Mietzweig legt die gesparte Differenz gegenüber dem Kaufen nicht mehr an — die Ergebnisse fallen stark kaufsfreundlich verzerrt aus.'
-            : 'The renting branch no longer invests the money it saves compared to owning — results will be strongly biased towards buying.'}
-        </div>
-      )}
+      <Warnings
+        lang={lang}
+        freedCashOn={freedCashOn}
+        sonderWarning={sonderWarning}
+        paymentWarning={paymentWarning}
+      />
 
-      {sonderWarning && (
-        <div className="warning">
-          ⚠️ <strong>{de ? 'Sondertilgung über der üblichen Konditionsobergrenze.' : 'Sondertilgung above the usual contract cap.'}</strong>{' '}
-          {de ? 'Du setzt' : 'You set'} {fmtEur(sonderWarning.extra)}/{de ? 'Jahr' : 'year'}, {de ? `aber deine Sondertilgungs-Klausel erlaubt höchstens ${sonderWarning.capPct} % des ursprünglichen Darlehens ≈` : `but your Sondertilgung clause allows at most ${sonderWarning.capPct} % of the original loan ≈`} {fmtEur(sonderWarning.cap)}/{de ? 'Jahr' : 'year'}.{' '}
-          {de ? 'Werte über der Grenze werden Banken kaum genehmigen.' : 'Runs above the cap are unlikely to be granted.'}
-        </div>
-      )}
-
-      {paymentWarning && (
-        <div className="warning">
-          ⚠️ <strong>{de ? 'Die Monatsrate deckt die anfänglichen Zinsen nicht.' : "The monthly payment does not cover the initial interest."}</strong>{' '}
-          {de ? 'Bei deinem aktuellen Darlehen betragen die Zinsen allein ≈' : 'At your current loan the interest alone is ≈'} {fmtEur(paymentWarning.interestOnly)}{de ? '/Monat' : '/month'}, {de ? 'aber du setzt' : 'but you set'} {fmtEur(paymentWarning.mp)}{de ? '/Monat — das Darlehen würde nie getilgt (und die Bank würde es nicht vergeben). Erhöhe Rate oder Eigenkapital.' : "/month — the loan would never amortize (and the bank wouldn't grant it). Raise the payment or the equity."}
-        </div>
-      )}
-
-      <div className="runs-bar">
-        <div className="run-group">
-          <span className="run-group-label">{de ? 'Deterministisches Szenario' : 'Deterministic scenario'}</span>
-          <Button variant="filled" color="brand" onClick={runNominal} disabled={running !== null}>
-            {running === 'nominal' ? (de ? 'Läuft…' : 'Running…') : '▶ ' + (de ? 'Starten' : 'Run')}
-          </Button>
-          <span className="hint">{de ? 'ein Durchlauf mit exakt deinen Eingaben' : 'one pass with your exact inputs'}</span>
-        </div>
-        <div className="run-group">
-          <span className="run-group-label">🎲 Monte Carlo</span>
-          <NumberInput
-            w={110}
-            size="xs"
-            min={100}
-            max={10000}
-            step={100}
-            value={mcRuns}
-            aria-label={de ? 'Anzahl der Monte-Carlo-Läufe' : 'Number of Monte Carlo runs'}
-            onChange={(v) => setMcRuns(Math.max(100, Math.min(10000, Number(v) || 1000)))}
-          />
-          <NumberInput
-            w={110}
-            size="xs"
-            value={seed}
-            aria-label={de ? 'Zufalls-Seed' : 'Random seed'}
-            onChange={(v) => setSeed(Number(v) || 42)}
-          />
-          <span className="hint">{enrolledCount} {de ? 'Parameter enrolliert' : 'parameter(s) enrolled'}</span>
-          <Button variant="filled" color="brand" onClick={runMc} disabled={running !== null}>
-            {running === 'mc'
-              ? (de ? `Simuliere… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}` : `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`)
-              : '▶ ' + (de ? 'Starten' : 'Run')}
-          </Button>
-          {running === 'mc' && (
-            <Button variant="light" color="red" onClick={cancelMc}>
-              ✕ {de ? 'Abbrechen' : 'Cancel'}
-            </Button>
-          )}
-        </div>
-      </div>
+      <RunsBar
+        lang={lang}
+        running={running}
+        mcRuns={mcRuns}
+        seed={seed}
+        mcProgress={mcProgress}
+        enrolledCount={enrolledCount}
+        onRunNominal={runNominal}
+        onRunMc={runMc}
+        onCancelMc={cancelMc}
+        onMcRunsChange={setMcRuns}
+        onSeedChange={setSeed}
+      />
 
       <div className="main-tabs">
         <SegmentedControl
