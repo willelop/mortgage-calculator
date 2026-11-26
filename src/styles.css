@@ -603,8 +603,15 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   position: relative;
   display: inline-flex;
   align-items: center;
-  cursor: help;
   flex: 0 0 auto;
+}
+/* the "?" is a real button now: reset the chrome it inherits */
+.help-tip .help-mark {
+  font: inherit;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
 }
 .help-tip .help-mark {
   display: inline-flex;
@@ -622,7 +629,8 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .help-tip:hover .help-mark,
-.help-tip:focus .help-mark {
+.help-tip:focus-within .help-mark,
+.help-tip.open .help-mark {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
@@ -659,7 +667,8 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   border-top-color: var(--tooltip-bg);
 }
 .help-tip:hover .help-tooltip,
-.help-tip:focus .help-tooltip {
+.help-tip:focus-within .help-tooltip,
+.help-tip.open .help-tooltip {
   display: block;
 }
 

@@ -27,8 +27,9 @@ Loaded via pointer from the root `AGENTS.md` for planning work.
    Sondertilgung warning is now an editable parameter (default 5 %) instead
    of a hard-coded value; `hausgeld_indexation` select (inflation / fixed /
    custom rate) with `hausgeld_index_rate` for the custom case.)
-6. Accessibility pass on the custom tooltips (focus trap / escape on mobile —
-   hover tooltips are unusable on touch).
+6. (Done 2026-11: HelpTip is a real toggle button — tap/Enter opens the
+   tooltip, Escape closes it and restores focus, a tap outside dismisses it;
+   desktop hover/focus behavior unchanged via CSS focus-within/.open rules.)
 7. End-to-end smoke (Playwright) run in CI against the built bundle, so Pages
    deploys never receive a blank page.
 
