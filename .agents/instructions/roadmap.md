@@ -265,6 +265,15 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   stays in your browser" promise; add only after the Pages deploy flow is
   verified to keep working (stale-worker handling: skip-waiting + a toast
   "updated, reload").
+  (Done 2025-08: `public/sw.js` — network-first navigations (new deploys
+  arrive immediately; cached shell = offline fallback), cache-first assets
+  with background refresh; install → skipWaiting, activate → clients.claim.
+  `public/manifest.webmanifest` + SVG icon (also the favicon) + theme-color
+  meta. Registered in App's mount effect, production only and never under
+  webdriver automation; `controllerchange` fires the "new version installed
+  — please reload" toast. Verified: `node --check sw.js`, manifest JSON,
+  full gate, e2e against `vite preview` — the real Pages check happens on
+  the user's next push.)
 
 ## Priority 5 — Long-term
 

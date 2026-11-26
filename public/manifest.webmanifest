@@ -1,0 +1,14 @@
+{
+  "name": "Buy vs. Rent — Mortgage Calculator (Germany)",
+  "short_name": "Buy vs Rent",
+  "description": "Buy-vs-rent mortgage calculator for the German market. 100% client-side; no data leaves your browser.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f6f3",
+  "theme_color": "#1f744b",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

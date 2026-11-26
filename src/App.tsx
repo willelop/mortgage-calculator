@@ -93,6 +93,29 @@ export default function App(): JSX.Element {
     if (restoredRef.current) showToast(de ? 'Letzte Sitzung wiederhergestellt.' : 'Restored your last session.');
   }, [mountedOnce, showToast, de]);
 
+  // PWA service worker (roadmap 4d): production only, never under automation
+  // (Playwright/webdriver) so e2e runs stay deterministic. When an updated
+  // worker takes control (skipWaiting + clients.claim in sw.js), tell the user.
+  useEffect(() => {
+    if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
+    if ((navigator as { webdriver?: boolean }).webdriver) return;
+    let alive = true;
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* registration failed (e.g. insecure context) — the app works without */
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (alive) {
+        showToast(
+          de ? '🔄 Neue Version installiert — bitte neu laden.' : '🔄 New version installed — please reload.',
+        );
+      }
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showToast, de]);
+
   // latest state for use inside long-lived worker callbacks
   const stateRef = useRef(state);
   stateRef.current = state;
