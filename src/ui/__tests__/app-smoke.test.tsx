@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import App from '../../App';
 import { defaultState } from '../../engine/params';
 import { autosaveState, loadAutosave, clearAutosave } from '../../engine/state-io';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // vitest globals are off → testing-library's auto-cleanup doesn't register;
 // unmount every render after each test so queries don't match stale DOM.
@@ -126,5 +127,23 @@ describe('dark theme toggle', () => {
     expect(localStorage.getItem('buyvsrent.theme')).toBe('light');
     unmount();
     localStorage.removeItem('buyvsrent.theme');
+  });
+});
+
+describe('ErrorBoundary', () => {
+  it('renders the recovery card instead of crashing the tree', () => {
+    function Boom(): JSX.Element {
+      throw new Error('boom');
+    }
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <ErrorBoundary>
+        <Boom />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Reload')).toBeTruthy();
+    expect(screen.getByText('Reset parameters & reload')).toBeTruthy();
+    spy.mockRestore();
   });
 });

@@ -65,15 +65,18 @@ being asked for / cheapest-first)**
 
 **Robustness & engineering**
 
-17. React error boundary around the app: a render exception should show a
-    recoverable "Reload parameters" card — blank pages happened twice; this
-    makes the third one impossible to miss.
+17. (Done 2026-11: `src/ui/ErrorBoundary.tsx` wraps the app in `main.tsx` —
+    a render exception now shows a recoverable card with "Reload" and
+    "Reset parameters & reload" (clears the `buyvsrent.*` localStorage
+    entries when the persisted state itself is the trigger); bilingual via
+    browser language, with a boundary unit test.)
 18. Engine invariant tests (property-style): money conservation (rent branch
     cash + invested == buy branch cash + property + invested up to the flows
     under test), loan fully amortizes by term end whenever amortization > 0,
     no negative reserves. These catch whole classes that example tests miss.
-19. CI hardening: separate test job from the deploy job (failed test must
-    never deploy), `concurrency` to cancel superseded runs, cache `node_modules`.
+19. (Done 2026-11: `deploy.yml` — tests run in their own `test` job and
+    build/deploy depend on it, so a red test can never reach Pages;
+    `concurrency` cancel-in-progress and npm caching were already in place.)
 20. Share links compress state (URL currently grows with every parameter —
     deflate + base64 when it exceeds ~1 500 chars, with a graceful fallback).
 
