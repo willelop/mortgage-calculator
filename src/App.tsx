@@ -299,14 +299,7 @@ export default function App(): JSX.Element {
     setMainTab('results');
   };
 
-  // Plotly measures its container while the results column is hidden (width 0);
-  // nudge the responsive charts after switching to Results so they fill the column.
-  useEffect(() => {
-    if (mainTab !== 'results') return;
-    window.dispatchEvent(new Event('resize'));
-    const t = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
-    return () => window.clearTimeout(t);
-  }, [mainTab]);
+  // chart re-fitting after tab switches is handled by the ResizeObserver in Plot.tsx
 
   return (
     <MantineProvider theme={mantineTheme} forceColorScheme={theme}>
@@ -365,6 +358,8 @@ export default function App(): JSX.Element {
       <div className="main-tabs">
         <SegmentedControl
           aria-label={de ? 'Hauptbereich' : 'Main area'}
+          fullWidth
+          size="md"
           value={mainTab}
           onChange={(v) => setMainTab(v as 'inputs' | 'results')}
           data={[

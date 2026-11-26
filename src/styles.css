@@ -239,6 +239,7 @@ select:focus, input[type='number']:focus {
 /* main Inputs/Results toggle: only one column is visible, take the full width */
 .grid.inputs-only, .grid.results-only { grid-template-columns: 1fr; }
 .main-tabs { margin: 0 0 14px; }
+.main-tabs .mantine-SegmentedControl-label { font-size: 0.95rem; font-weight: 550; }
 
 /* scenario comparison (roadmap 4c): a second results column side by side */
 .grid.results-only.compare-mode { grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr); }
@@ -393,7 +394,7 @@ html[data-theme='dark'] .param-box:has(.mc-toggle input:checked) .mc-toggle { co
 .param-tabs .mantine-Tabs-tab .count { opacity: 0.6; font-weight: 400; font-size: 0.76rem; }
 .param-tabs .mantine-Tabs-tab:hover { color: var(--text); background: transparent; }
 .param-tabs .mantine-Tabs-tab[data-active] { border-color: var(--accent) !important; color: var(--text) !important; font-weight: 600; }
-.param-tabs .mantine-Tabs-tabList { border-bottom: 1px solid var(--border) !important; }
+.param-tabs .mantine-Tabs-list { border-bottom: 1px solid var(--border) !important; }
 
 .tab-hint { margin: 0 0 12px; }
 
@@ -726,13 +727,21 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   .brand { gap: 10px; }
   .brand .logo { width: 38px; height: 38px; border-radius: 9px; }
 
-  .toolbar { gap: 6px; padding-bottom: 8px; }
-  .toolbar button, .toolbar select {
-    font-size: 0.82rem;
-    padding: 6px 8px;
+  /* sticky, full-width Inputs/Results switch: reachable from anywhere on the page */
+  .main-tabs {
+    position: sticky;
+    top: 8px;
+    z-index: 25;
+    margin: 0 0 12px;
   }
-  /* the preset list is long — keep it from pushing buttons onto extra rows */
-  .toolbar select { max-width: 150px; }
+  .main-tabs .mantine-SegmentedControl-root { background: var(--glass); backdrop-filter: blur(6px); }
+  .main-tabs .mantine-SegmentedControl-label { font-size: 1rem; }
+
+  /* toolbar collapses to icon buttons (titles/aria-labels carry the meaning) */
+  .toolbar .btn-text { display: none; }
+  .toolbar label.toolbar-select-label span.btn-text { display: none; }
+  .toolbar select { max-width: 128px; }
+  .toolbar button { padding-inline: 10px; }
 
   /* docked action bar: the two Run buttons live at the thumb side of the screen */
   .runs-bar {
@@ -763,12 +772,12 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   .param-mc input[type='number'] { width: 90px; }
 
   /* swipe the 8 tabs horizontally instead of wrapping into rows */
-  .param-tabs .mantine-Tabs-tabList {
+  .param-tabs .mantine-Tabs-list {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
   }
-  .param-tabs .mantine-Tabs-tabList::-webkit-scrollbar { display: none; }
+  .param-tabs .mantine-Tabs-list::-webkit-scrollbar { display: none; }
   .param-tabs .mantine-Tabs-tab { font-size: 0.82rem; padding-inline: 10px; white-space: nowrap; }
 
   .keynumbers { grid-template-columns: repeat(2, minmax(0, 1fr)); }

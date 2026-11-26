@@ -48,8 +48,8 @@ export function Toolbar({
       >
         {theme === 'dark' ? '☀️' : '🌙'}
       </ActionIcon>
-      <label>
-        {de ? 'Voreinstellung' : 'Preset'}
+      <label className="toolbar-select-label">
+        <span className="btn-text">{de ? 'Voreinstellung' : 'Preset'}</span>
         <select value={preset} onChange={(e) => onPreset(e.target.value)}>
           <option value="">{de ? '— wählen —' : '— choose —'}</option>
           {PRESETS.map((p) => (
@@ -62,18 +62,26 @@ export function Toolbar({
           </optgroup>
         </select>
       </label>
-      <Button variant="default" onClick={onShare}>🔗 {de ? 'Link teilen' : 'Share link'}</Button>
-      <Button variant="default" onClick={onSave}>💾 {de ? 'Speichern' : 'Save'}</Button>
-      <Button variant="light" color="red" onClick={() => {
+      <Button variant="default" onClick={onShare} title={de ? 'Link teilen' : 'Share link'}>
+        🔗 <span className="btn-text">{de ? 'Link teilen' : 'Share link'}</span>
+      </Button>
+      <Button variant="default" onClick={onSave} title={de ? 'Szenario speichern' : 'Save scenario'}>
+        💾 <span className="btn-text">{de ? 'Speichern' : 'Save'}</span>
+      </Button>
+      <Button variant="light" color="red" title={de ? 'Gespeicherte Szenarien löschen' : 'Delete saved scenarios'} onClick={() => {
           localStorageNames().forEach(localStorageDelete);
         }}>
-        🗑 {de ? 'Gespeichertes löschen' : 'Clear saved'}
+        🗑 <span className="btn-text">{de ? 'Gespeichertes löschen' : 'Clear saved'}</span>
       </Button>
-      <Button variant="default" onClick={onReset}>↺ {de ? 'Auf Standardwerte zurücksetzen' : 'Reset to defaults'}</Button>
+      <Button variant="default" onClick={onReset} title={de ? 'Auf Standardwerte zurücksetzen' : 'Reset to defaults'}>
+        ↺ <span className="btn-text">{de ? 'Reset' : 'Reset'}</span>
+      </Button>
       <OptionsMenu state={state} onChange={onStateChange} />
-      <Button variant="default" onClick={() => window.print()}>🖨 {de ? 'Drucken / PDF' : 'Print / PDF'}</Button>
-      <label>
-        {de ? '⚖ Vergleichen' : '⚖ Compare'}
+      <Button variant="default" onClick={() => window.print()} title={de ? 'Drucken / PDF' : 'Print / PDF'}>
+        🖨 <span className="btn-text">{de ? 'Drucken / PDF' : 'Print / PDF'}</span>
+      </Button>
+      <label className="toolbar-select-label">
+        <span className="btn-text">{de ? '⚖ Vergleichen' : '⚖ Compare'}</span>
         <select
           value={compareName ?? ''}
           onChange={(e) => onCompare(e.target.value)}

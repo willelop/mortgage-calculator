@@ -32,6 +32,16 @@ const DIST_LABELS_DE: Record<Dist, string> = {
 /** parameter groups shown on the main form (correlations live in Monte Carlo) */
 const MAIN_GROUPS: Group[] = GROUP_ORDER.filter((g) => g !== 'correlations');
 
+/** emoji per config tab (kept next to the group list so they stay in sync) */
+const GROUP_ICONS: Partial<Record<Group, string>> = {
+  global: '🌍',
+  purchase: '🧾',
+  mortgage: '🏦',
+  rent: '🔑',
+  invest: '📈',
+  appreciation: '🏡',
+};
+
 /** label of the Monte-Carlo section, kept out of Group for tab typing */
 type Section = Group | 'mc';
 const SECTIONS: Section[] = [...MAIN_GROUPS, 'mc'];
@@ -97,6 +107,7 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
   return (
     <div className="param-form">
       <Tabs
+        className="param-tabs"
         value={tab}
         onChange={(v) => setTab((v ?? MAIN_GROUPS[0]) as Section)}
         keepMounted
@@ -105,7 +116,7 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
           aria-label={lang === 'de' ? 'Parameterbereiche' : 'Parameter sections'}
         >
           {SECTIONS.map((s) => (
-            <Tabs.Tab key={s} value={s} leftSection={s === 'mc' ? '🎲' : undefined}>
+            <Tabs.Tab key={s} value={s} leftSection={s === 'mc' ? '🎲' : GROUP_ICONS[s] ?? undefined}>
               {tabTitle(s)}
               <span className="count">({countOf(s)})</span>
             </Tabs.Tab>
