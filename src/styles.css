@@ -332,6 +332,9 @@ select:focus, input[type='number']:focus {
 .param-input input[type='number'] { width: 105px; text-align: right; font-variant-numeric: tabular-nums; }
 .param-input .unit { color: var(--muted); font-size: 0.75rem; min-width: 34px; }
 .param-input .switch { display: flex; align-items: center; gap: 6px; }
+/* slider under the value input (roadmap 4b) */
+.param-input { flex-wrap: wrap; }
+.param-input .param-slider { flex-basis: 100%; width: 100%; margin-top: 6px; --slider-size: 4px; }
 
 .mc-toggle {
   color: var(--muted);

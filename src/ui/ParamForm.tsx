@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Tabs } from '@mantine/core';
+import { Tabs, Slider } from '@mantine/core';
 import { PARAM_DEFS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, McSpec, Dist, groupLabel, labelOf, helpOf, selectOptionLabel } from '../engine/params';
 import { useLang } from '../i18n';
 import { HelpTip } from './HelpTip';
+
+/** Headline inputs that also get a slider (roadmap 4b): value input stays the
+ *  source of truth; the slider mirrors and drives it (linked both ways). */
+const SLIDER_PARAMS = new Set(['property_price', 'equity', 'fixed_rate', 'fixed_years']);
 
 interface Props {
   state: ParamState;
@@ -171,6 +175,20 @@ function ValueBox({ def, state, set, isOn }: { def: ParamDef; state: ParamState;
                 onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
               />
               <span className="unit">{unitOf(def.kind, lang)}</span>
+              {SLIDER_PARAMS.has(def.key) && (
+                <Slider
+                  className="param-slider"
+                  size="xs"
+                  radius="sm"
+                  min={def.min ?? 0}
+                  max={def.max ?? 100}
+                  step={def.step ?? 1}
+                  value={Math.min(Math.max(state.values[def.key], def.min ?? 0), def.max ?? 100)}
+                  onChange={(v) => set(def.key, { value: v })}
+                  aria-label={label}
+                  label={undefined}
+                />
+              )}
             </>
           )}
         </div>

@@ -84,7 +84,8 @@ describe('autosave — values survive a reload', () => {
     autosaveState(s);
     render(<App />);
     expect(screen.getByText('Restored your last session.')).toBeTruthy();
-    expect(screen.getByDisplayValue('432100')).toBeTruthy();
+    // slider params render a second (hidden) input with the same value
+    expect(screen.getAllByDisplayValue('432100').length).toBeGreaterThan(0);
   });
 });
 

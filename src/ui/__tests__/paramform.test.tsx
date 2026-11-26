@@ -122,6 +122,21 @@ describe('OptionsMenu (feature toggles)', () => {
     expect(findParamBox(container, 'Hausgeld').className).toContain('off');
     expect(findParamBox(container, 'Maintenance reserve').className).not.toContain('off');
   });
+
+  it('headline inputs have a slider linked to the value input (roadmap 4b)', () => {
+    const { container } = render(<Harness initial={defaultState()} />);
+    // sliders exist for the four headline params
+    const sliders = container.querySelectorAll('.param-input .param-slider');
+    expect(sliders.length).toBe(4);
+    // keyboard interaction on the property-price slider thumb changes the value
+    const priceBox = findParamBox(container, 'Property price');
+    const thumb = priceBox.querySelector('[role="slider"]') as HTMLElement;
+    expect(thumb).toBeTruthy();
+    expect(screen.getAllByDisplayValue('500000').length).toBeGreaterThan(0); // input (+ slider hidden input)
+    fireEvent.keyDown(thumb, { key: 'ArrowRight' });
+    // Mantine steps by def.step = 5000 → the number input now shows the new value
+    expect(screen.getAllByDisplayValue('505000').length).toBeGreaterThan(0);
+  });
 });
 
 // --- helpers ----------------------------------------------------------------

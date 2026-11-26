@@ -244,6 +244,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   Mantine `Slider` + `NumberInput` linked both ways; keyboard reachable;
   tests keep using the NumberInput (getByDisplayValue) so the slider needs
   no test coverage beyond one interaction test.
+  (Done 2025-08: `SLIDER_PARAMS` = property_price, equity, fixed_rate,
+  fixed_years — Mantine `Slider` (size xs) rendered under the existing
+  number input inside the same param box, linked both ways via
+  `state.values`; keyboard-operable thumb. Tests: slider-count + one
+  ArrowRight interaction; display-value assertions switched to
+  `getAllByDisplayValue` (the slider renders a second hidden input).
+  Suite 99/99 + e2e.)
 - **4c. Scenario comparison** (was 8): two saved scenarios side by side —
   reuse `localStorageSave/Load`; render a second Results column in a
   dedicated comparison mode reachable from the toolbar.
