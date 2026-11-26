@@ -85,9 +85,10 @@ being asked for / cheapest-first)**
 
 **UX polish**
 
-21. Preset library: city/land-specific presets (Munich vs Leipzig economics,
-    the `Grunderwerbsteuer` rate differs by Bundesland) with a short "why" in
-    the preset list.
+21. (Done 2026-11: city presets for Munich/Berlin/Leipzig/Hamburg with the
+    correct Bundesland Grunderwerbsteuer (3.5/6.0/5.5/4.5 %) and typical
+    price/rent economics; each preset's description carries a short "why" and
+    the preset dropdown shows it as the option tooltip.)
 22. Printable one-page "Entscheidungsvorlage": the headline numbers, the
     decision, and the top sensitivities — the print CSS exists, add a layout
     that deserves it.

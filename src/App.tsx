@@ -14,7 +14,7 @@ import { initialTheme, applyTheme, Theme } from './theme';
 import { fmtEur } from './format';
 import { useLang, setLang } from './i18n';
 import {
-  applyPreset, PRESETS, fromLocation, toShareUrl, presetName,
+  applyPreset, PRESETS, fromLocation, toShareUrl, presetName, presetDescription,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
   autosaveState, loadAutosave,
 } from './engine/state-io';
@@ -286,7 +286,7 @@ export default function App(): JSX.Element {
             <select value={preset} onChange={(e) => applyPresetByName(e.target.value)}>
               <option value="">{de ? '— wählen —' : '— choose —'}</option>
               {PRESETS.map((p) => (
-                <option key={p.name} value={p.name}>{presetName(p, lang)}</option>
+                <option key={p.name} value={p.name} title={presetDescription(p, lang)}>{presetName(p, lang)}</option>
               ))}
               <optgroup label={de ? 'Gespeicherte Szenarien' : 'Saved scenarios'}>
                 {localStorageNames().map((n) => (
