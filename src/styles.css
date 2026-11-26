@@ -240,6 +240,15 @@ select:focus, input[type='number']:focus {
 .grid.inputs-only, .grid.results-only { grid-template-columns: 1fr; }
 .main-tabs { margin: 0 0 14px; }
 
+/* scenario comparison (roadmap 4c): a second results column side by side */
+.grid.results-only.compare-mode { grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr); }
+@media (max-width: 1100px) { .grid.results-only.compare-mode { grid-template-columns: 1fr; } }
+.col-compare { border-left: 2px solid var(--border-strong, #ccc); padding-left: 18px; }
+.compare-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 12px; font-size: 0.95rem;
+}
+
 /* --- cards ---------------------------------------------------------------------------- */
 
 .card {
@@ -608,7 +617,7 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
 }
 
 @media print {
-  .col-params, .toolbar, .runs-bar, footer, .warning, .toast, .csv-actions, .terms-toggle {
+  .col-params, .toolbar, .runs-bar, footer, .warning, .toast, .csv-actions, .terms-toggle, .compare-head {
     display: none !important;
   }
   .main-tabs { display: none !important; }

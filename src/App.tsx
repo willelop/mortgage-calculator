@@ -53,6 +53,8 @@ export default function App(): JSX.Element {
   const [mcProgress, setMcProgress] = useState<number | null>(null);
   // main toggle: inputs or results. Both columns stay mounted; inactive is hidden.
   const [mainTab, setMainTab] = useState<'inputs' | 'results'>('inputs');
+  // scenario comparison (roadmap 4c): name of a saved scenario shown side by side
+  const [compareName, setCompareName] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -218,6 +220,13 @@ export default function App(): JSX.Element {
     [state.mc],
   );
 
+  // scenario comparison (roadmap 4c): run the saved scenario once per selection
+  const compareResult = useMemo<ScenarioResult | null>(() => {
+    if (!compareName) return null;
+    const saved = localStorageLoad(compareName);
+    return saved ? runScenario(saved) : null;
+  }, [compareName]);
+
   const share = useCallback(async () => {
     const url = await toShareUrlAsync(state);
     try {
@@ -324,6 +333,25 @@ export default function App(): JSX.Element {
           <Button variant="default" onClick={() => setState(defaultState())}>↺ {de ? 'Auf Standardwerte zurücksetzen' : 'Reset to defaults'}</Button>
           <OptionsMenu state={state} onChange={setState} />
           <Button variant="default" onClick={() => window.print()}>🖨 {de ? 'Drucken / PDF' : 'Print / PDF'}</Button>
+          <label>
+            {de ? '⚖ Vergleichen' : '⚖ Compare'}
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  setCompareName(e.target.value);
+                  setMainTab('results');
+                }
+              }}
+              aria-label={de ? 'Mit gespeichertem Szenario vergleichen' : 'Compare with a saved scenario'}
+              title={localStorageNames().length === 0 ? (de ? 'Erst ein Szenario speichern' : 'Save a scenario first') : undefined}
+            >
+              <option value="">{de ? '— Szenario wählen —' : '— choose scenario —'}</option>
+              {localStorageNames().map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
         </div>
         {toast && <div className="toast">{toast}</div>}
       </header>
@@ -405,7 +433,7 @@ export default function App(): JSX.Element {
         />
       </div>
 
-      <main className={`grid ${mainTab === 'inputs' ? 'inputs-only' : 'results-only'}`}>
+      <main className={`grid ${mainTab === 'inputs' ? 'inputs-only' : 'results-only'}${compareName && compareResult ? ' compare-mode' : ''}`}>
         {nominal && <PrintOnePager nominal={nominal} sens={sens} inflationPct={num(state, 'inflation')} />}
         <div className="col-params" hidden={mainTab !== 'inputs'}>
           <ParamForm state={state} onChange={setState} />
@@ -418,7 +446,7 @@ export default function App(): JSX.Element {
               {de ? (
                 <>
                   <li>Der Vermögensvergleich setzt in beiden Zweigen denselben Verzicht voraus; die gesamte monatliche Kostendifferenz zwischen Kaufen und Mieten wird mietend angelegt (oder entnommen).</li>
-                  <li>Die Anlagesteuern modellieren Abgeltungsteuer mit Teilfreistellung und Sparerpauschbetrag bei Entnahme/Verkauf; keine Vorabpauschale.</li>
+                  <li>Die Anlagesteuern modellieren Abgeltungsteuer mit Teilfreistellung und Sparerpauschbetrag bei Entnahme/Verkauf; die Vorabpauschale wird jährlich erhoben (abschaltbar).</li>
                   <li>Kursgewinne der selbstgenutzten Immobilie sind nach der 10-Jahres-Frist des § 23 EStG steuerfrei (abschaltbar).</li>
                   <li>Keine Einkommensteuer-Effekte (z. B. keine Abschreibung, keine steuerliche Absetzbarkeit — nur Selbstnutzung).</li>
                   <li>Details zu jeder Annahme stehen in den Parameter-Tooltips des Formulars.</li>
@@ -426,7 +454,7 @@ export default function App(): JSX.Element {
               ) : (
                 <>
                   <li>Net worth comparison assumes both branches have the same income; the entire difference in monthly cost of buying vs. renting is invested (or withdrawn) in the renting branch.</li>
-                  <li>Investment taxes model Abgeltungsteuer with Teilfreistellung and Sparerpauschbetrag at withdrawal/liquidation; no Vorabpauschale.</li>
+                  <li>Investment taxes model Abgeltungsteuer with Teilfreistellung and Sparerpauschbetrag at withdrawal/liquidation; the Vorabpauschale is levied annually (toggleable).</li>
                   <li>Owner-occupied property capital gains are tax-free after §23 EStG&apos;s 10-year holding period (toggleable).</li>
                   <li>No income tax effects (e.g. no depreciation, no tax deductibility — self-use only).</li>
                   <li>Check the parameter tooltips in the form for details on each assumption.</li>
@@ -435,6 +463,17 @@ export default function App(): JSX.Element {
             </ul>
           </section>
         </div>
+        {compareName && compareResult && (
+          <div className="col-results col-compare">
+            <div className="compare-head">
+              <strong>⚖ {de ? 'Vergleich mit' : 'Compared with'}: {compareName}</strong>
+              <Button variant="default" size="xs" onClick={() => setCompareName(null)}>
+                ✕ {de ? 'Vergleich beenden' : 'End comparison'}
+              </Button>
+            </div>
+            <Results nominal={compareResult} mc={null} sens={null} inflationPct={num(state, 'inflation')} />
+          </div>
+        )}
       </main>
 
       <footer>

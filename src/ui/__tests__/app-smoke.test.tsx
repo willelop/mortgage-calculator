@@ -8,7 +8,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import App from '../../App';
 import { defaultState } from '../../engine/params';
-import { autosaveState, loadAutosave, clearAutosave } from '../../engine/state-io';
+import { autosaveState, loadAutosave, clearAutosave, localStorageSave, localStorageDelete } from '../../engine/state-io';
 import { ErrorBoundary } from '../ErrorBoundary';
 
 // vitest globals are off → testing-library's auto-cleanup doesn't register;
@@ -113,6 +113,27 @@ describe('repayment mode UI', () => {
     expect(screen.getAllByText(/Desired monthly payment/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Initial amortization \(Anfangstilgung\)/)).toBeNull();
     expect((allSelects.find(isModeSelect) as HTMLSelectElement).value).toBe('1');
+  });
+});
+
+describe('scenario comparison (roadmap 4c)', () => {
+  it('picking a saved scenario renders a second results column', () => {
+    clearAutosave();
+    const s = defaultState();
+    s.values.rent_cold = 3000;
+    localStorageSave('High rent', s);
+    try {
+      render(<App />);
+      const sel = screen.getByLabelText(/Compare with a saved scenario/);
+      fireEvent.change(sel, { target: { value: 'High rent' } });
+      // dedicated comparison column with a header and its own key numbers
+      expect(screen.getByText(/Compared with: High rent/)).toBeTruthy();
+      expect(screen.getByText(/End comparison/)).toBeTruthy();
+      // two Results instances → the difference stat appears twice
+      expect(screen.getAllByText(/Difference \(buy − rent/).length).toBeGreaterThanOrEqual(2);
+    } finally {
+      localStorageDelete('High rent');
+    }
   });
 });
 

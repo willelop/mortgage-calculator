@@ -254,6 +254,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
 - **4c. Scenario comparison** (was 8): two saved scenarios side by side —
   reuse `localStorageSave/Load`; render a second Results column in a
   dedicated comparison mode reachable from the toolbar.
+  (Done 2025-08: toolbar "⚖ Compare" select lists saved scenarios; picking
+  one switches to Results and renders a second `.col-compare` column with
+  its own full nominal Results (`mc`/`sens` null → nominal parts only),
+  headed "Compared with: <name>" with an "End comparison" button; grid
+  becomes two columns on wide screens, stacked on narrow. Outdated
+  "no Vorabpauschale" assumption lines corrected. Test covers the flow;
+  suite 100/100.)
 - **4d. PWA/offline** (was 9): service worker + manifest; fits the "all data
   stays in your browser" promise; add only after the Pages deploy flow is
   verified to keep working (stale-worker handling: skip-waiting + a toast
