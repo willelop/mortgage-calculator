@@ -2,22 +2,22 @@ import { MantineThemeOverride } from '@mantine/core';
 
 /**
  * Mantine theme: "Modern sleek" — neutral, restrained, precise.
- * One emerald accent, hairline borders, small radii, quiet shadows.
+ * One purple accent, hairline borders, small radii, quiet shadows.
  * Pairs with the tokens in src/styles.css.
  */
 export const mantineTheme: MantineThemeOverride = {
   colors: {
     brand: [
-      '#e6f4ee',
-      '#c2e2d3',
-      '#9ccfb7',
-      '#77bb9a',
-      '#54a97f',
-      '#3c986c',
-      '#2f8d61',
-      '#278357',
-      '#1f744b',
-      '#175c3b',
+      '#f5f0fc',
+      '#e9defa',
+      '#d2bdf4',
+      '#b99bee',
+      '#9e77e6',
+      '#8b5ee0',
+      '#7d4edb',
+      '#7040c7',
+      '#5e34a8',
+      '#4a2884',
     ],
   },
   primaryColor: 'brand',
@@ -29,5 +29,5 @@ export const mantineTheme: MantineThemeOverride = {
     fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
     fontWeight: '600',
   },
-  defaultGradient: { from: '#2f8d61', to: '#1f744b', deg: 180 },
+  defaultGradient: { from: '#7d4edb', to: '#5e34a8', deg: 180 },
 };
