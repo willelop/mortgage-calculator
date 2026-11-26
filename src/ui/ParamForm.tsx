@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tabs } from '@mantine/core';
-import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, McSpec, Dist } from '../engine/params';
+import { PARAM_DEFS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, McSpec, Dist, groupLabel, labelOf, helpOf, selectOptionLabel } from '../engine/params';
+import { useLang } from '../i18n';
 
 interface Props {
   state: ParamState;
@@ -16,6 +17,13 @@ const DIST_LABELS: Record<Dist, string> = {
   triangular: 'Triangular',
 };
 
+const DIST_LABELS_DE: Record<Dist, string> = {
+  lognormal: 'Lognormal',
+  normal: 'Normal',
+  uniform: 'Gleichverteilt',
+  triangular: 'Dreieck',
+};
+
 /** parameter groups shown on the main form (correlations live in Monte Carlo) */
 const MAIN_GROUPS: Group[] = GROUP_ORDER.filter((g) => g !== 'correlations');
 
@@ -23,12 +31,9 @@ const MAIN_GROUPS: Group[] = GROUP_ORDER.filter((g) => g !== 'correlations');
 type Section = Group | 'mc';
 const SECTIONS: Section[] = [...MAIN_GROUPS, 'mc'];
 
-const TAB_TITLES: Record<Section, string> = {
-  ...GROUP_LABELS,
-  mc: 'Monte Carlo',
-};
-
 export function ParamForm({ state, onChange }: Props): JSX.Element {
+  const lang = useLang();
+
   const set: Setter = (key, patch) => {
     const next: ParamState = {
       values: { ...state.values },
@@ -58,13 +63,16 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
   const countOf = (s: Section) =>
     s === 'mc' ? enrolled() : groupDefs(s).length;
 
+  /** Tab titles: the MC section is not a Group, so title it here. */
+  const tabTitle = (s: Section) => (s === 'mc' ? 'Monte Carlo' : groupLabel(s, lang));
+
   const sectionBody = (s: Section): JSX.Element =>
     s === 'mc' ? (
       <>
         <p className="muted tab-hint">
-          Choose which values are simulated randomly. Each enrolled row takes its
-          nominal (median) value from the group tabs; below are the correlations
-          between the random shocks.
+          {lang === 'de'
+            ? 'Wähle, welche Werte zufällig simuliert werden. Jede aktivierte Zeile übernimmt ihren nominalen (medianen) Wert aus den Gruppen-Tabs; darunter stehen die Korrelationen zwischen den Zufallsschocks.'
+            : 'Choose which values are simulated randomly. Each enrolled row takes its nominal (median) value from the group tabs; below are the correlations between the random shocks.'}
         </p>
         {PARAM_DEFS.filter((d) => d.group === 'correlations' && visible(d)).map((d) => (
           <ValueBox key={d.key} def={d} state={state} set={set} isOn={true} />
@@ -88,10 +96,12 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
         onChange={(v) => setTab((v ?? MAIN_GROUPS[0]) as Section)}
         keepMounted
       >
-        <Tabs.List aria-label="Parameter sections">
+        <Tabs.List
+          aria-label={lang === 'de' ? 'Parameterbereiche' : 'Parameter sections'}
+        >
           {SECTIONS.map((s) => (
             <Tabs.Tab key={s} value={s} leftSection={s === 'mc' ? '🎲' : undefined}>
-              {TAB_TITLES[s]}
+              {tabTitle(s)}
               <span className="count">({countOf(s)})</span>
             </Tabs.Tab>
           ))}
@@ -99,8 +109,12 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
       </Tabs>
 
       <p className="muted tab-hint">
-        The tabs hold the <strong>values</strong> — a disabled feature is dimmed, and you
-        switch features on or off in the <strong>⚙️ Options</strong> menu in the top bar.
+        {lang === 'de' ? (
+          <>Die Tabs enthalten die <strong>Werte</strong> — ein deaktiviertes Merkmal wird gedimmt, und du schaltest Merkmale im <strong>⚙️ Optionen</strong>-Menü in der Kopfzeile ein oder aus.</>
+        ) : (
+          <>The tabs hold the <strong>values</strong> — a disabled feature is dimmed, and you
+          switch features on or off in the <strong>⚙️ Options</strong> menu in the top bar.</>
+        )}
       </p>
 
       {/* every panel stays mounted; inactive ones are display:none so state is never lost */}
@@ -108,7 +122,7 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
         <div
           key={s}
           role="tabpanel"
-          aria-label={s === 'mc' ? TAB_TITLES[s] : (GROUP_LABELS as Record<string, string>)[s]}
+          aria-label={tabTitle(s)}
           data-testid={`tab-panel-${s}`}
           style={{ display: tab === s ? undefined : 'none' }}
         >
@@ -120,36 +134,29 @@ export function ParamForm({ state, onChange }: Props): JSX.Element {
 }
 
 /** Parameter box: just the value (dimmed while its feature is disabled). */
-function ValueBox({
-  def,
-  state,
-  set,
-  isOn,
-}: {
-  def: ParamDef;
-  state: ParamState;
-  set: Setter;
-  isOn: boolean;
-}): JSX.Element {
+function ValueBox({ def, state, set, isOn }: { def: ParamDef; state: ParamState; set: Setter; isOn: boolean }): JSX.Element {
+  const lang = useLang();
+  const label = labelOf(def, lang);
+  const help = helpOf(def, lang);
   const cls = ['param-box', !isOn ? 'off' : ''].join(' ');
   return (
     <div className={cls}>
       <div className="param-main">
         <div className="param-label">
           <span className="icon" aria-hidden>{iconOf(def.key)}</span>
-          <span className="text">{def.label}</span>
-          {def.help && <HelpTip text={def.help} />}
+          <span className="text">{label}</span>
+          {help && <HelpTip text={help} />}
         </div>
         <div className="param-input">
           {def.kind === 'select' ? (
             <select
               value={state.values[def.key]}
               onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
-              aria-label={def.label}
-              title={def.help}
+              aria-label={label}
+              title={help}
             >
               {(def.options ?? []).map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>{selectOptionLabel(def.key, o, lang)}</option>
               ))}
             </select>
           ) : (
@@ -162,7 +169,7 @@ function ValueBox({
                 step={def.step ?? 1}
                 onChange={(e) => set(def.key, { value: parseFloat(e.target.value) })}
               />
-              <span className="unit">{unitOf(def.kind)}</span>
+              <span className="unit">{unitOf(def.kind, lang)}</span>
             </>
           )}
         </div>
@@ -172,15 +179,10 @@ function ValueBox({
 }
 
 /** Monte-Carlo row: enroll checkbox; the nominal value comes from its group tab. */
-function McRow({
-  def,
-  state,
-  set,
-}: {
-  def: ParamDef;
-  state: ParamState;
-  set: Setter;
-}): JSX.Element {
+function McRow({ def, state, set }: { def: ParamDef; state: ParamState; set: Setter }): JSX.Element {
+  const lang = useLang();
+  const label = labelOf(def, lang);
+  const help = helpOf(def, lang);
   const spec = state.mc[def.key];
   const mcOn = spec?.enabled ?? false;
   const cls = ['param-box', mcOn ? 'mc-on' : ''].join(' ');
@@ -193,14 +195,14 @@ function McRow({
             className="toggle"
             checked={mcOn}
             onChange={(e) => spec && set(def.key, { mc: { ...spec, enabled: e.target.checked } })}
-            aria-label={`Enroll ${def.label} in Monte Carlo`}
+            aria-label={lang === 'de' ? `${label} in die Monte-Carlo-Simulation aufnehmen` : `Enroll ${label} in Monte Carlo`}
           />
           <span className="icon" aria-hidden>{iconOf(def.key)}</span>
-          <span className="text">{def.label}</span>
-          {def.help && <HelpTip text={def.help} />}
+          <span className="text">{label}</span>
+          {help && <HelpTip text={help} />}
         </div>
         <div className="param-input">
-          <span className="unit">nominal: {state.values[def.key]} {unitOf(def.kind)}</span>
+          <span className="unit">{lang === 'de' ? 'nominal' : 'nominal'}: {state.values[def.key]} {unitOf(def.kind, lang)}</span>
         </div>
       </div>
       {mcOn && spec && (
@@ -208,11 +210,11 @@ function McRow({
           <select
             value={spec.dist}
             onChange={(e) => set(def.key, { mc: { ...spec, dist: e.target.value as Dist } })}
-            aria-label={`Distribution for ${def.label}`}
+            aria-label={lang === 'de' ? `Verteilung für ${label}` : `Distribution for ${label}`}
           >
             {(Object.keys(DIST_LABELS) as Dist[]).map((dist) => (
               <option key={dist} value={dist}>
-                {DIST_LABELS[dist]}
+                {(lang === 'de' ? DIST_LABELS_DE : DIST_LABELS)[dist]}
               </option>
             ))}
           </select>
@@ -240,16 +242,16 @@ function McRow({
   );
 }
 
-function unitOf(kind: string): string {
+function unitOf(kind: string, lang: 'de' | 'en'): string {
   switch (kind) {
     case 'eur':
       return '€';
     case 'mrate':
-      return '€/mo';
+      return lang === 'de' ? '€/Mon.' : '€/mo';
     case 'pct':
-      return '% p.a.';
+      return '% p. a.';
     case 'count':
-      return 'yrs';
+      return lang === 'de' ? 'J.' : 'yrs';
     case 'ratio':
       return 'ρ';
     default:

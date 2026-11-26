@@ -12,8 +12,9 @@ import { Results } from './ui/Results';
 import { Logo } from './ui/Logo';
 import { initialTheme, applyTheme, Theme } from './theme';
 import { fmtEur } from './format';
+import { useLang, setLang } from './i18n';
 import {
-  applyPreset, PRESETS, fromLocation, toShareUrl,
+  applyPreset, PRESETS, fromLocation, toShareUrl, presetName,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
   autosaveState, loadAutosave,
 } from './engine/state-io';
@@ -21,6 +22,8 @@ import {
 export default function App(): JSX.Element {
   const restoredRef = useRef(false);
   const [theme, setTheme] = useState<Theme>(() => initialTheme());
+  const lang = useLang();
+  const de = lang === 'de';
 
   const toggleTheme = useCallback(() => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
@@ -68,8 +71,8 @@ export default function App(): JSX.Element {
   useEffect(() => {
     if (mountedOnce) return;
     setMountedOnce(true);
-    if (restoredRef.current) showToast('Restored your last session.');
-  }, [mountedOnce, showToast]);
+    if (restoredRef.current) showToast(de ? 'Letzte Sitzung wiederhergestellt.' : 'Restored your last session.');
+  }, [mountedOnce, showToast, de]);
 
   // latest state for use inside long-lived worker callbacks
   const stateRef = useRef(state);
@@ -100,7 +103,7 @@ export default function App(): JSX.Element {
       }
       if (msg.type === 'error') {
         if (msg.error && msg.error !== 'cancelled') {
-          window.alert(`Monte Carlo failed: ${msg.error}`);
+          window.alert(`${msg.error.includes('Monte Carlo failed') ? msg.error : de ? 'Monte Carlo fehlgeschlagen: ' + msg.error : 'Monte Carlo failed: ' + msg.error}`);
         }
         setMcProgress(null);
         setRunning(null);
@@ -112,6 +115,8 @@ export default function App(): JSX.Element {
     };
     workerRef.current = w;
     return w;
+    // language only affects the error text shown — safe to read at first render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -196,11 +201,11 @@ export default function App(): JSX.Element {
     const url = toShareUrl(state);
     try {
       await navigator.clipboard.writeText(url);
-      showToast('Link copied to clipboard.');
+      showToast(de ? 'Link in die Zwischenablage kopiert.' : 'Link copied to clipboard.');
     } catch {
-      window.prompt('Copy this link:', url);
+      window.prompt(de ? 'Link kopieren:' : 'Copy this link:', url);
     }
-  }, [state, showToast]);
+  }, [state, showToast, de]);
 
   const applyPresetByName = (name: string) => {
     setPreset(name);
@@ -214,7 +219,10 @@ export default function App(): JSX.Element {
   };
 
   const saveScenario = () => {
-    const name = window.prompt('Scenario name:', preset.startsWith('__local:') ? preset.slice(8) : preset || 'My scenario');
+    const name = window.prompt(
+      de ? 'Szenario-Name:' : 'Scenario name:',
+      preset.startsWith('__local:') ? preset.slice(8) : preset || (de ? 'Mein Szenario' : 'My scenario'),
+    );
     if (name) {
       localStorageSave(name, state);
       setPreset(`__local:${name}`);
@@ -242,13 +250,25 @@ export default function App(): JSX.Element {
         <div className="brand">
           <Logo />
           <div>
-            <h1>Buy vs. Rent — Mortgage Calculator <span className="de">(Germany)</span></h1>
+            <h1>{de ? 'Mieten oder Kaufen — Immobilienrechner' : 'Buy vs. Rent — Mortgage Calculator'} <span className="de">({de ? 'Deutschland' : 'Germany'})</span></h1>
             <p className="subtitle">
-              Deterministic + Monte-Carlo analysis. All data stays in your browser.
+              {de
+                ? 'Deterministische + Monte-Carlo-Analyse. Alle Daten bleiben in deinem Browser.'
+                : 'Deterministic + Monte-Carlo analysis. All data stays in your browser.'}
             </p>
           </div>
         </div>
         <div className="toolbar">
+          <ActionIcon
+            variant="default"
+            size="lg"
+            radius="xl"
+            onClick={() => setLang(de ? 'en' : 'de')}
+            title={de ? 'Switch to English' : 'Zu Deutsch wechseln'}
+            aria-label={de ? 'Switch to English' : 'Zu Deutsch wechseln'}
+          >
+            {de ? '🇬🇧' : '🇩🇪'}
+          </ActionIcon>
           <ActionIcon
             variant="default"
             size="lg"
@@ -260,65 +280,64 @@ export default function App(): JSX.Element {
             {theme === 'dark' ? '☀️' : '🌙'}
           </ActionIcon>
           <label>
-            Preset
+            {de ? 'Voreinstellung' : 'Preset'}
             <select value={preset} onChange={(e) => applyPresetByName(e.target.value)}>
-              <option value="">— choose —</option>
+              <option value="">{de ? '— wählen —' : '— choose —'}</option>
               {PRESETS.map((p) => (
-                <option key={p.name} value={p.name}>{p.name}</option>
+                <option key={p.name} value={p.name}>{presetName(p, lang)}</option>
               ))}
-              <optgroup label="Saved scenarios">
+              <optgroup label={de ? 'Gespeicherte Szenarien' : 'Saved scenarios'}>
                 {localStorageNames().map((n) => (
                   <option key={n} value={`__local:${n}`}>{n}</option>
                 ))}
               </optgroup>
             </select>
           </label>
-          <Button variant="default" onClick={share}>🔗 Share link</Button>
-          <Button variant="default" onClick={saveScenario}>💾 Save</Button>
+          <Button variant="default" onClick={share}>🔗 {de ? 'Link teilen' : 'Share link'}</Button>
+          <Button variant="default" onClick={saveScenario}>💾 {de ? 'Speichern' : 'Save'}</Button>
           <Button variant="light" color="red" onClick={() => {
               localStorageNames().forEach(localStorageDelete);
             }}>
-            🗑 Clear saved
+            🗑 {de ? 'Gespeichertes löschen' : 'Clear saved'}
           </Button>
-          <Button variant="default" onClick={() => setState(defaultState())}>↺ Reset to defaults</Button>
+          <Button variant="default" onClick={() => setState(defaultState())}>↺ {de ? 'Auf Standardwerte zurücksetzen' : 'Reset to defaults'}</Button>
           <OptionsMenu state={state} onChange={setState} />
-          <Button variant="default" onClick={() => window.print()}>🖨 Print / PDF</Button>
+          <Button variant="default" onClick={() => window.print()}>🖨 {de ? 'Drucken / PDF' : 'Print / PDF'}</Button>
         </div>
         {toast && <div className="toast">{toast}</div>}
       </header>
 
       {!freedCashOn && (
         <div className="warning">
-          ⚠️ <strong>“Invest freed cash flow while renting” is switched off.</strong> The renting branch
-          no longer invests the money it saves compared to owning — results will be strongly biased
-          towards buying.
+          ⚠️ <strong>“{de ? 'Gesparte Differenz mietend anlegen' : 'Invest freed cash flow while renting'}” {de ? 'ist ausgeschaltet.' : 'is switched off.'}</strong>{' '}
+          {de
+            ? 'Der Mietzweig legt die gesparte Differenz gegenüber dem Kaufen nicht mehr an — die Ergebnisse fallen stark kaufsfreundlich verzerrt aus.'
+            : 'The renting branch no longer invests the money it saves compared to owning — results will be strongly biased towards buying.'}
         </div>
       )}
 
       {sonderWarning && (
         <div className="warning">
-          ⚠️ <strong>Sondertilgung above the usual contract cap.</strong> You set{' '}
-          {fmtEur(sonderWarning.extra)}/year, but most contracts allow at most 5 % of the original
-          loan ≈ {fmtEur(sonderWarning.cap)}/year. Runs above the cap are unlikely to be granted.
+          ⚠️ <strong>{de ? 'Sondertilgung über der üblichen Konditionsobergrenze.' : 'Sondertilgung above the usual contract cap.'}</strong>{' '}
+          {de ? 'Du setzt' : 'You set'} {fmtEur(sonderWarning.extra)}/{de ? 'Jahr' : 'year'}, {de ? 'aber die meisten Verträge erlauben höchstens 5 % des ursprünglichen Darlehens ≈' : 'but most contracts allow at most 5 % of the original loan ≈'} {fmtEur(sonderWarning.cap)}/{de ? 'Jahr' : 'year'}.{' '}
+          {de ? 'Werte über der Grenze werden Banken kaum genehmigen.' : 'Runs above the cap are unlikely to be granted.'}
         </div>
       )}
 
       {paymentWarning && (
         <div className="warning">
-          ⚠️ <strong>The monthly payment does not cover the initial interest.</strong> At your
-          current loan the interest alone is ≈ {fmtEur(paymentWarning.interestOnly)}/month, but you
-          set {fmtEur(paymentWarning.mp)}/month — the loan would never amortize (and the bank
-          wouldn't grant it). Raise the payment or the equity.
+          ⚠️ <strong>{de ? 'Die Monatsrate deckt die anfänglichen Zinsen nicht.' : "The monthly payment does not cover the initial interest."}</strong>{' '}
+          {de ? 'Bei deinem aktuellen Darlehen betragen die Zinsen allein ≈' : 'At your current loan the interest alone is ≈'} {fmtEur(paymentWarning.interestOnly)}{de ? '/Monat' : '/month'}, {de ? 'aber du setzt' : 'but you set'} {fmtEur(paymentWarning.mp)}{de ? '/Monat — das Darlehen würde nie getilgt (und die Bank würde es nicht vergeben). Erhöhe Rate oder Eigenkapital.' : "/month — the loan would never amortize (and the bank wouldn't grant it). Raise the payment or the equity."}
         </div>
       )}
 
       <div className="runs-bar">
         <div className="run-group">
-          <span className="run-group-label">Deterministic scenario</span>
+          <span className="run-group-label">{de ? 'Deterministisches Szenario' : 'Deterministic scenario'}</span>
           <Button variant="filled" color="brand" onClick={runNominal} disabled={running !== null}>
-            {running === 'nominal' ? 'Running…' : '▶ Run'}
+            {running === 'nominal' ? (de ? 'Läuft…' : 'Running…') : '▶ ' + (de ? 'Starten' : 'Run')}
           </Button>
-          <span className="hint">one pass with your exact inputs</span>
+          <span className="hint">{de ? 'ein Durchlauf mit exakt deinen Eingaben' : 'one pass with your exact inputs'}</span>
         </div>
         <div className="run-group">
           <span className="run-group-label">🎲 Monte Carlo</span>
@@ -329,25 +348,25 @@ export default function App(): JSX.Element {
             max={10000}
             step={100}
             value={mcRuns}
-            aria-label="Number of Monte Carlo runs"
+            aria-label={de ? 'Anzahl der Monte-Carlo-Läufe' : 'Number of Monte Carlo runs'}
             onChange={(v) => setMcRuns(Math.max(100, Math.min(10000, Number(v) || 1000)))}
           />
           <NumberInput
             w={110}
             size="xs"
             value={seed}
-            aria-label="Random seed"
+            aria-label={de ? 'Zufalls-Seed' : 'Random seed'}
             onChange={(v) => setSeed(Number(v) || 42)}
           />
-          <span className="hint">{enrolledCount} parameter(s) enrolled</span>
+          <span className="hint">{enrolledCount} {de ? 'Parameter enrolliert' : 'parameter(s) enrolled'}</span>
           <Button variant="filled" color="brand" onClick={runMc} disabled={running !== null}>
             {running === 'mc'
-              ? `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`
-              : '▶ Run'}
+              ? (de ? `Simuliere… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}` : `Simulating… ${mcProgress !== null ? Math.round(mcProgress * 100) + ' %' : ''}`)
+              : '▶ ' + (de ? 'Starten' : 'Run')}
           </Button>
           {running === 'mc' && (
             <Button variant="light" color="red" onClick={cancelMc}>
-              ✕ Cancel
+              ✕ {de ? 'Abbrechen' : 'Cancel'}
             </Button>
           )}
         </div>
@@ -355,12 +374,12 @@ export default function App(): JSX.Element {
 
       <div className="main-tabs">
         <SegmentedControl
-          aria-label="Main area"
+          aria-label={de ? 'Hauptbereich' : 'Main area'}
           value={mainTab}
           onChange={(v) => setMainTab(v as 'inputs' | 'results')}
           data={[
-            { value: 'inputs', label: '✏️ Inputs' },
-            { value: 'results', label: '📊 Results' },
+            { value: 'inputs', label: de ? '✏️ Eingaben' : '✏️ Inputs' },
+            { value: 'results', label: de ? '📊 Ergebnisse' : '📊 Results' },
           ]}
         />
       </div>
@@ -372,20 +391,32 @@ export default function App(): JSX.Element {
         <div className="col-results" hidden={mainTab !== 'results'}>
           <Results nominal={nominal} mc={mc} sens={sens} inflationPct={num(state, 'inflation')} />
           <section className="card assumptions">
-            <h2>Model assumptions & limits</h2>
+            <h2>{de ? 'Modellannahmen & Grenzen' : 'Model assumptions & limits'}</h2>
             <ul>
-              <li>Net worth comparison assumes both branches have the same income; the entire difference in monthly cost of buying vs. renting is invested (or withdrawn) in the renting branch.</li>
-              <li>Investment taxes model Abgeltungsteuer with Teilfreistellung and Sparerpauschbetrag at withdrawal/liquidation; no Vorabpauschale.</li>
-              <li>Owner-occupied property capital gains are tax-free after §23 EStG's 10-year holding period (toggleable).</li>
-              <li>No income tax effects (e.g. no depreciation, no tax deductibility — self-use only).</li>
-              <li>Check the parameter tooltips in the form for details on each assumption.</li>
+              {de ? (
+                <>
+                  <li>Der Vermögensvergleich setzt in beiden Zweigen denselben Verzicht voraus; die gesamte monatliche Kostendifferenz zwischen Kaufen und Mieten wird mietend angelegt (oder entnommen).</li>
+                  <li>Die Anlagesteuern modellieren Abgeltungsteuer mit Teilfreistellung und Sparerpauschbetrag bei Entnahme/Verkauf; keine Vorabpauschale.</li>
+                  <li>Kursgewinne der selbstgenutzten Immobilie sind nach der 10-Jahres-Frist des § 23 EStG steuerfrei (abschaltbar).</li>
+                  <li>Keine Einkommensteuer-Effekte (z. B. keine Abschreibung, keine steuerliche Absetzbarkeit — nur Selbstnutzung).</li>
+                  <li>Details zu jeder Annahme stehen in den Parameter-Tooltips des Formulars.</li>
+                </>
+              ) : (
+                <>
+                  <li>Net worth comparison assumes both branches have the same income; the entire difference in monthly cost of buying vs. renting is invested (or withdrawn) in the renting branch.</li>
+                  <li>Investment taxes model Abgeltungsteuer with Teilfreistellung and Sparerpauschbetrag at withdrawal/liquidation; no Vorabpauschale.</li>
+                  <li>Owner-occupied property capital gains are tax-free after §23 EStG&apos;s 10-year holding period (toggleable).</li>
+                  <li>No income tax effects (e.g. no depreciation, no tax deductibility — self-use only).</li>
+                  <li>Check the parameter tooltips in the form for details on each assumption.</li>
+                </>
+              )}
             </ul>
           </section>
         </div>
       </main>
 
       <footer>
-        <span>100 % client-side, generated with AI (Mistral Vibe) — GitHub Pages-ready. No data leaves your browser.</span>
+        <span>{de ? '100 % client-seitig, mit KI generiert (Mistral Vibe) — bereit für GitHub Pages. Keine Daten verlassen deinen Browser.' : '100 % client-side, generated with AI (Mistral Vibe) — GitHub Pages-ready. No data leaves your browser.'}</span>
       </footer>
     </div>
     </MantineProvider>

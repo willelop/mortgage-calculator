@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Popover, Checkbox, Button } from '@mantine/core';
-import { PARAM_DEFS, GROUP_LABELS, GROUP_ORDER, iconOf, ParamDef, ParamState } from '../engine/params';
+import { PARAM_DEFS, GROUP_ORDER, iconOf, Group, ParamDef, ParamState, groupLabel, labelOf, helpOf } from '../engine/params';
+import { useLang } from '../i18n';
 
 /** parameter groups shown on the main form (correlations have no on/off) */
 const MAIN_GROUPS = GROUP_ORDER.filter((g) => g !== 'correlations');
@@ -16,6 +17,7 @@ interface Props {
  */
 export function OptionsMenu({ state, onChange }: Props): JSX.Element {
   const [open, setOpen] = useState(false);
+  const lang = useLang();
 
   const defs = MAIN_GROUPS.flatMap((g) =>
     PARAM_DEFS.filter(
@@ -44,9 +46,9 @@ export function OptionsMenu({ state, onChange }: Props): JSX.Element {
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             aria-haspopup="menu"
-            title="Enable or disable features"
+            title={lang === 'de' ? 'Merkmale ein- oder ausschalten' : 'Enable or disable features'}
           >
-            ⚙️ Options ({defs.filter((d) => isEnabled(d)).length}/{defs.length})
+            ⚙️ {lang === 'de' ? 'Optionen' : 'Options'} ({defs.filter((d) => isEnabled(d)).length}/{defs.length})
           </Button>
         </Popover.Target>
         {open && (
@@ -58,19 +60,23 @@ export function OptionsMenu({ state, onChange }: Props): JSX.Element {
                 if (gdefs.length === 0) return null;
                 return (
                   <div key={g} className="opt-group">
-                    <h3>{GROUP_LABELS[g]}</h3>
+                    <h3>{groupLabel(g, lang)}</h3>
                     {gdefs.map((d) => (
                       <label key={d.key} className="opt-item">
                         <Checkbox
                           className="toggle"
                           checked={isEnabled(d)}
                           onChange={(e) => toggle(d, e.currentTarget.checked)}
-                          aria-label={d.kind === 'switch' ? d.label : `Enable ${d.label}`}
+                          aria-label={
+                            d.kind === 'switch'
+                              ? labelOf(d, lang)
+                              : lang === 'de' ? `${labelOf(d, lang)} aktivieren` : `Enable ${labelOf(d, lang)}`
+                          }
                         />
                         <span className="icon" aria-hidden>{iconOf(d.key)}</span>
-                        <span className="text">{d.label}</span>
-                        {d.help && <HelpTip text={d.help} />}
-                        <span className="unit">{isEnabled(d) ? 'on' : 'off'}</span>
+                        <span className="text">{labelOf(d, lang)}</span>
+                        {helpOf(d, lang) && <HelpTip text={helpOf(d, lang)} />}
+                        <span className="unit">{isEnabled(d) ? (lang === 'de' ? 'ein' : 'on') : (lang === 'de' ? 'aus' : 'off')}</span>
                       </label>
                     ))}
                   </div>

@@ -1,4 +1,4 @@
-# Buy vs. Rent — German Mortgage Calculator
+{"type":"text","text":"successfully downloaded text file (SHA: c4e809bad483ee1b352e01d818e3f28ccff96182)"}# Buy vs. Rent — German Mortgage Calculator
 
 > [!IMPORTANT]
 > **This project was entirely generated with AI** (Mistral Vibe / Mistral AI, with
@@ -28,6 +28,9 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
 
 ## Features
 
+- **DE/EN language toggle**: 🇩🇪/🇬🇧 button in the toolbar; every label, help
+  tooltip, warning, chart axis, CSV header and preset name exists in both languages.
+  Defaults to the browser language on first visit, persisted in localStorage.
 - **Parameter model** built around the German market (defaults for a 500 k€ house):
   Grunderwerbsteuer by Bundesland, Notar/Grundbuch/Makler costs, Wohngebäudeversicherung,
   Grundsteuer, maintenance reserve, Hausgeld/WEG.

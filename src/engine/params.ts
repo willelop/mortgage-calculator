@@ -1,4 +1,4 @@
-/**
+{"type":"text","text":"successfully downloaded text file (SHA: c7acd9b62281fb46ee2bcab1a118321de0b8e899)"}/**
  * Parameter registry — the single source of truth for every input of the model.
  *
  * Every parameter is:
@@ -13,6 +13,10 @@
  *  - 'switch': 0/1 checkbox
  *  - 'ratio' : correlation coefficient in [-1, 1]
  */
+
+import { groupLabelDe } from './params-de';
+
+export { labelOf, helpOf, selectOptionLabel } from './params-de';
 
 export type Group =
   | 'global'
@@ -30,11 +34,15 @@ export type CorrTag = 'stocks' | 'property' | 'inflation';
 export interface SelectOption {
   value: number;
   label: string;
+  /** German variant for the UI (see params-de.ts). */
+  labelDe?: string;
 }
 
 export interface ParamDef {
   key: string;
   label: string;
+  /** German label; falls back to `label` when absent. */
+  labelDe?: string;
   group: Group;
   kind: Kind;
   default: number;
@@ -54,6 +62,8 @@ export interface ParamDef {
   /** Monte-Carlo-enrollable */
   mcable?: boolean;
   help?: string;
+  /** German help text; falls back to `help` when absent. */
+  helpDe?: string;
   /** UI icon (emoji) for the parameter box */
   icon?: string;
 }
@@ -283,4 +293,12 @@ export function numRaw(state: ParamState, key: string): number {
 /** Switch helper: on = value flag with ON default */
 export function switchOn(state: ParamState, key: string): boolean {
   return num(state, key) !== 0;
+}
+
+// --- UI language helpers (the switch itself lives in src/i18n.ts) ------------
+
+/** Localized group label for the tab bar and the Options menu. */
+export function groupLabel(g: Group, lang: 'de' | 'en'): string {
+  const de = groupLabelDe(g);
+  return lang === 'de' && de ? de : GROUP_LABELS[g];
 }

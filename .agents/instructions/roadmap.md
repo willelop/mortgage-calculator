@@ -1,4 +1,4 @@
-# Roadmap — working plan, in priority order
+{"type":"text","text":"successfully downloaded text file (SHA: debf00a30bac733e530dee17ca488830bbb88ab2)"}# Roadmap — working plan, in priority order
 
 Loaded via pointer from the root `AGENTS.md` for planning work.
 
@@ -16,8 +16,11 @@ Loaded via pointer from the root `AGENTS.md` for planning work.
    `react-vendor` chunk, app entry down 195.87 → 54.06 k (gzip 64 → 19 k);
    Plotly still lazy. Remaining: swap Plotly for a lighter chart layer —
    moved to long-term item 16b.)
-4. German-language UI (the market is German; English texts are a legacy of the
-   AI generation).
+4. (Done 2026-11: DE/EN toggle in the toolbar — branch `i18n-de-en`. English
+   stays the default/test language (`buyvsrent.lang`); German covers every
+   label, help text, warning, chart axis, CSV header and preset name. The
+   switch lives in `src/i18n.ts`; German strings in `src/engine/params-de.ts`
+   and as inline DE/EN pairs in the components.)
 
 **Mid term**
 5. Contractual realism: `Sondertilgung` cap as a *parameter* (currently a

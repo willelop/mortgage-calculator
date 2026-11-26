@@ -127,8 +127,21 @@ export function clearAutosave(): void {
 export interface Preset {
   name: string;
   description: string;
+  /** German display name / description (`name`/`description` stay canonical, used as keys). */
+  nameDe?: string;
+  descriptionDe?: string;
   values: Record<string, number>;
   on?: Record<string, boolean>;
+}
+
+/** Localized display name (fallback: canonical `name`). */
+export function presetName(p: Preset, lang: 'de' | 'en'): string {
+  return lang === 'de' && p.nameDe ? p.nameDe : p.name;
+}
+
+/** Localized display description (fallback: canonical `description`). */
+export function presetDescription(p: Preset, lang: 'de' | 'en'): string {
+  return lang === 'de' && p.descriptionDe ? p.descriptionDe : p.description;
 }
 
 export function applyPreset(s: ParamState, p: Preset): ParamState {
@@ -149,12 +162,16 @@ export function applyPreset(s: ParamState, p: Preset): ParamState {
 export const PRESETS: Preset[] = [
   {
     name: 'German default — 500 k€ house',
+    nameDe: 'Deutscher Standard — 500-k€-Haus',
     description: '500 k€, 150 k€ equity, 10 y fixation, 25 y horizon.',
+    descriptionDe: '500 k€, 150 k€ Eigenkapital, 10 J. Zinsbindung, 25 J. Horizont.',
     values: {},
   },
   {
     name: 'Starter flat — 350 k€ condo',
+    nameDe: 'Starterwohnung — 350-k€-Eigentumswohnung',
     description: 'Smaller purchase, condo fees, lower rent.',
+    descriptionDe: 'Kleinerer Kauf, Hausgeld, niedrigere Miete.',
     values: {
       property_price: 350_000,
       equity: 105_000,
@@ -169,7 +186,9 @@ export const PRESETS: Preset[] = [
   },
   {
     name: 'Family house — 650 k€',
+    nameDe: 'Einfamilienhaus — 650 k€',
     description: 'Bigger property, higher rent baseline, 30 y horizon.',
+    descriptionDe: 'Größere Immobilie, höhere Mietbasis, 30 J. Horizont.',
     values: {
       property_price: 650_000,
       equity: 195_000,
@@ -184,7 +203,9 @@ export const PRESETS: Preset[] = [
   },
   {
     name: 'Pessimistic markets',
+    nameDe: 'Pessimistische Märkte',
     description: 'Low stock returns, property stagnation, high rent growth.',
+    descriptionDe: 'Niedrige Aktienrenditen, stagnierende Immobilien, hohe Mietsteigerung.',
     values: {
       expected_return_stocks: 4.0,
       property_appreciation: 0.5,

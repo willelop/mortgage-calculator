@@ -4,6 +4,8 @@ import { AmortYear } from '../engine/mortgage';
 import { McResult } from '../engine/monte-carlo';
 import { SensitivityResult } from '../engine/sensitivity';
 import { fmtEur, fmtSignedEur, fmtPct } from '../format';
+import { PARAM_MAP, labelOf } from '../engine/params';
+import { useLang } from '../i18n';
 import { Plot } from './Plot';
 import { downloadCsv } from './csv';
 
@@ -20,6 +22,8 @@ const COLORS = {
 };
 
 export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element | null {
+  const lang = useLang();
+  const de = lang === 'de';
   const [realTerms, setRealTerms] = React.useState(false);
 
   /** deflate a value at year index i when real terms are selected */
@@ -32,70 +36,77 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
   const H = nominal.horizon;
   const inf = inflationPct / 100;
 
-  const termsNote = realTerms ? `real terms (today's €, ${fmtPct(inf)} p.a.)` : 'nominal terms';
+  const termsNote = realTerms
+    ? de ? `real (heutige €, ${fmtPct(inf)} p. a.)` : `real terms (today's €, ${fmtPct(inf)} p.a.)`
+    : de ? 'nominal' : 'nominal terms';
 
   const nwBuyShown = nominal.nwBuy.map(deflate);
   const nwRentShown = nominal.nwRent.map(deflate);
+
+  const yearOf = (y: number | null) =>
+    y !== null ? (de ? `Jahr ${y}` : `year ${y}`) : (de ? 'nicht im Horizont' : 'not within horizon');
 
   return (
     <div className="results">
       <section className="card">
         <div className="card-head">
-          <h2>Nominal scenario — net worth ({termsNote})</h2>
-          <label className="terms-toggle" title="Divide all amounts by inflation since today">
+          <h2>{de ? 'Nominales Szenario — Nettovermögen' : 'Nominal scenario — net worth'} ({termsNote})</h2>
+          <label className="terms-toggle" title={de ? 'Alle Beträge durch die Inflation seit heute teilen' : "Divide all amounts by inflation since today"}>
             <input
               type="checkbox"
               checked={realTerms}
               onChange={(e) => setRealTerms(e.target.checked)}
             />
-            show in real terms (today's €)
+            {de ? 'in realen Preisen zeigen (heutige €)' : "show in real terms (today's €)"}
           </label>
         </div>
         <div className="keynumbers">
-          <Stat label={`Property + investments (buy, ${termsNote})`} value={fmtEur(nominal.nwBuy[nominal.nwBuy.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
-          <Stat label={`Portfolio + kaution (rent, ${termsNote})`} value={fmtEur(nominal.nwRent[nominal.nwRent.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
+          <Stat label={de ? `Immobilie + Anlagen (Kaufen, ${termsNote})` : `Property + investments (buy, ${termsNote})`} value={fmtEur(nominal.nwBuy[nominal.nwBuy.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
+          <Stat label={de ? `Portfolio + Kaution (Mieten, ${termsNote})` : `Portfolio + kaution (rent, ${termsNote})`} value={fmtEur(nominal.nwRent[nominal.nwRent.length - 1] / Math.pow(1 + inf, realTerms ? H : 0))} />
           <Stat
-            label={`Difference (buy − rent, ${termsNote})`}
+            label={de ? `Differenz (Kaufen − Mieten, ${termsNote})` : `Difference (buy − rent, ${termsNote})`}
             value={fmtSignedEur(nominal.terminalDiff / Math.pow(1 + inf, realTerms ? H : 0))}
             highlight={nominal.terminalDiff >= 0 ? 'good' : 'bad'}
           />
-          <Stat label="Break-even year (buy ≥ rent)" value={nominal.breakEvenYear ? `year ${nominal.breakEvenYear}` : 'not within horizon'} />
-          <Stat label="Total mortgage interest" value={fmtEur(nominal.totalInterest)} />
+          <Stat label={de ? 'Break-even-Jahr (Kaufen ≥ Mieten)' : 'Break-even year (buy ≥ rent)'} value={yearOf(nominal.breakEvenYear)} />
+          <Stat label={de ? 'Gesamte Zinslast des Darlehens' : 'Total mortgage interest'} value={fmtEur(nominal.totalInterest)} />
           {nominal.loanAmount > 0 && (
             <Stat
-              label={`Restschuld after fixed period (year ${nominal.fixationYear})`}
+              label={de ? `Restschuld nach Zinsbindung (Jahr ${nominal.fixationYear})` : `Restschuld after fixed period (year ${nominal.fixationYear})`}
               value={fmtEur(nominal.restschuldAtFixation)}
             />
           )}
           {nominal.loanAmount > 0 && (
             <Stat
-              label={nominal.paymentMode ? 'Implied Anfangstilgung (from payment)' : 'Anfangstilgung'}
-              value={` ${fmtPct(nominal.effectiveTilgungPct / 100)} · ${fmtEur(nominal.effectiveMonthlyPayment)}/mo`}
+              label={nominal.paymentMode
+                ? de ? 'Implizite Anfangstilgung (aus der Rate)' : 'Implied Anfangstilgung (from payment)'
+                : 'Anfangstilgung'}
+              value={` ${fmtPct(nominal.effectiveTilgungPct / 100)} · ${fmtEur(nominal.effectiveMonthlyPayment)}${de ? '/Mon.' : '/mo'}`}
             />
           )}
-          <Stat label="Transaction costs" value={fmtEur(nominal.transactionCosts)} />
+          <Stat label={de ? 'Kaufnebenkosten' : 'Transaction costs'} value={fmtEur(nominal.transactionCosts)} />
         </div>
         <Plot
           data={[
             {
               x: nominal.years,
               y: nwBuyShown,
-              name: 'Buy',
+              name: de ? 'Kaufen' : 'Buy',
               mode: 'lines',
               line: { color: COLORS.buy, width: 3 },
             },
             {
               x: nominal.years,
               y: nwRentShown,
-              name: 'Rent',
+              name: de ? 'Mieten' : 'Rent',
               mode: 'lines',
               line: { color: COLORS.rent, width: 3 },
             },
           ]}
           layout={{
             margin: { l: 70, r: 20, t: 10, b: 50 },
-            xaxis: { title: 'Year' },
-            yaxis: { title: `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
+            xaxis: { title: de ? 'Jahr' : 'Year' },
+            yaxis: { title: de ? `Nettovermögen (€${realTerms ? ', heutige Kaufkraft' : ''})` : `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
             legend: { orientation: 'h' },
             hovermode: 'x',
           }}
@@ -105,13 +116,13 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
       {nominal.loanAmount > 0 && <AmortizationSection amort={nominal.amortization} nominal={nominal} />}
 
       <section className="card">
-        <h2>Cumulative cost of staying</h2>
+        <h2>{de ? 'Kumulierte Kosten des Wohnens' : 'Cumulative cost of staying'}</h2>
         <Plot
           data={[
             {
               x: nominal.years,
               y: nominal.buyCumCost,
-              name: 'Buy (all costs)',
+              name: de ? 'Kaufen (alle Kosten)' : 'Buy (all costs)',
               mode: 'lines',
               stackgroup: undefined,
               line: { color: COLORS.buy },
@@ -120,7 +131,7 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
             {
               x: nominal.years,
               y: nominal.rentCumCost,
-              name: 'Rent (all costs)',
+              name: de ? 'Mieten (alle Kosten)' : 'Rent (all costs)',
               mode: 'lines',
               line: { color: COLORS.rent },
               fill: 'tozeroy',
@@ -128,8 +139,8 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
           ]}
           layout={{
             margin: { l: 70, r: 20, t: 10, b: 50 },
-            xaxis: { title: 'Year' },
-            yaxis: { title: 'Cumulative cost (€)', tickformat: ',.0f' },
+            xaxis: { title: de ? 'Jahr' : 'Year' },
+            yaxis: { title: de ? 'Kumulierte Kosten (€)' : 'Cumulative cost (€)', tickformat: ',.0f' },
             legend: { orientation: 'h' },
             hovermode: 'x',
           }}
@@ -140,10 +151,12 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
 
       {sens && sens.rows.length > 0 && (
         <section className="card">
-          <h2>Sensitivity — what moves the buy−rent outcome most</h2>
+          <h2>{de ? 'Sensitivität — was das Kaufen−-Mieten-Ergebnis am meisten bewegt' : 'Sensitivity — what moves the buy−rent outcome most'}</h2>
           <p className="muted">
-            One-at-a-time: each parameter set to its low / high end (MC range if enrolled,
-            otherwise ± 10 %), everything else nominal. Baseline difference: {fmtSignedEur(sens.baseDiff)}.
+            {de
+              ? 'Einzeln nacheinander: jeder Parameter an sein niedriges / hohes Ende gesetzt (MC-Bereich, falls enrolliert, sonst ± 10 %), alles andere nominal. Baseline-Differenz: '
+              : 'One-at-a-time: each parameter set to its low / high end (MC range if enrolled, otherwise ± 10 %), everything else nominal. Baseline difference: '}
+            {fmtSignedEur(sens.baseDiff)}.
           </p>
           <Plot
             height={Math.max(240, Math.min(sens.rows.length, 14) * 34)}
@@ -151,17 +164,17 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
               {
                 type: 'bar',
                 orientation: 'h',
-                y: sens.rows.map((r) => r.label),
+                y: sens.rows.map((r) => sensRowLabel(r, de)),
                 x: sens.rows.map((r) => r.diffAtLow),
-                name: 'at low end',
+                name: de ? 'am unteren Ende' : 'at low end',
                 marker: { color: '#c05621' },
               },
               {
                 type: 'bar',
                 orientation: 'h',
-                y: sens.rows.map((r) => r.label),
+                y: sens.rows.map((r) => sensRowLabel(r, de)),
                 x: sens.rows.map((r) => r.diffAtHigh),
-                name: 'at high end',
+                name: de ? 'am oberen Ende' : 'at high end',
                 marker: { color: '#1a7f4b' },
               },
             ]}
@@ -169,7 +182,7 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
               barmode: 'overlay',
               opacity: 0.85,
               margin: { l: 260, r: 20, t: 10, b: 50 },
-              xaxis: { title: 'Terminal net worth difference, buy − rent (€)', tickformat: ',.0f' },
+              xaxis: { title: de ? 'Endvermögensdifferenz, Kaufen − Mieten (€)' : 'Terminal net worth difference, buy − rent (€)', tickformat: ',.0f' },
               yaxis: { automargin: true },
               legend: { orientation: 'h' },
             }}
@@ -178,6 +191,13 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
       )}
     </div>
   );
+}
+
+/** Sensitivity rows carry the English label from the engine; localize via the param key. */
+function sensRowLabel(r: { key: string; label: string }, de: boolean): string {
+  const def = PARAM_MAP[r.key];
+  if (!def) return r.label;
+  return labelOf(def, de ? 'de' : 'en');
 }
 
 function MonteCarloResults({
@@ -191,25 +211,29 @@ function MonteCarloResults({
   realTerms: boolean;
   inflationPct: number;
 }): JSX.Element {
+  const lang = useLang();
+  const de = lang === 'de';
   const years = mc.years;
   const H = years.length - 1;
-  const termsNote = realTerms ? `real terms (today's €, ${fmtPct(inflationPct / 100)} p.a.)` : 'nominal terms';
+  const termsNote = realTerms
+    ? de ? `real (heutige €, ${fmtPct(inflationPct / 100)} p. a.)` : `real terms (today's €, ${fmtPct(inflationPct / 100)} p.a.)`
+    : de ? 'nominal' : 'nominal terms';
   return (
     <>
       <section className="card">
-        <h2>Monte Carlo — {mc.runs.toLocaleString('de-DE')} simulated futures ({termsNote})</h2>
+        <h2>{de ? `Monte Carlo — ${mc.runs.toLocaleString('de-DE')} simulierte Zukünfte` : `Monte Carlo — ${mc.runs.toLocaleString('de-DE')} simulated futures`} ({termsNote})</h2>
         <div className="keynumbers">
-          <Stat label="Property: buy ends richer" value={fmtPct(mc.probBuyBeats)} highlight={mc.probBuyBeats >= 0.5 ? 'good' : 'bad'} />
-          <Stat label="Buy overtakes rent within horizon" value={fmtPct(mc.probBreakeven)} />
-          <Stat label="Median break-even year" value={mc.medianBreakEven !== null ? `year ${mc.medianBreakEven}` : '—'} />
-          <Stat label="Median terminal diff (buy − rent)" value={fmtSignedEur(deflate(mc.diffBands.p50[years.length - 1], H))} />
-          <Stat label="10th–90th pctl terminal diff" value={`${fmtEur(deflate(mc.diffBands.p10[years.length - 1], H))} … ${fmtEur(deflate(mc.diffBands.p90[years.length - 1], H))}`} />
+          <Stat label={de ? 'Immobilie: Kaufen endet reicher' : 'Property: buy ends richer'} value={fmtPct(mc.probBuyBeats)} highlight={mc.probBuyBeats >= 0.5 ? 'good' : 'bad'} />
+          <Stat label={de ? 'Kaufen überholt Mieten im Horizont' : 'Buy overtakes rent within horizon'} value={fmtPct(mc.probBreakeven)} />
+          <Stat label={de ? 'Medianes Break-even-Jahr' : 'Median break-even year'} value={mc.medianBreakEven !== null ? (de ? `Jahr ${mc.medianBreakEven}` : `year ${mc.medianBreakEven}`) : '—'} />
+          <Stat label={de ? 'Medianes Endvermögens-Delta (Kaufen − Mieten)' : 'Median terminal diff (buy − rent)'} value={fmtSignedEur(deflate(mc.diffBands.p50[years.length - 1], H))} />
+          <Stat label={de ? '10.–90. Perzentil des Endvermögens-Deltas' : '10th–90th pctl terminal diff'} value={`${fmtEur(deflate(mc.diffBands.p10[years.length - 1], H))} … ${fmtEur(deflate(mc.diffBands.p90[years.length - 1], H))}`} />
         </div>
         <FanChart mc={mc} deflate={deflate} realTerms={realTerms} />
       </section>
 
       <section className="card">
-        <h2>Terminal wealth difference (buy − rent)</h2>
+        <h2>{de ? 'Endvermögensdifferenz (Kaufen − Mieten)' : 'Terminal wealth difference (buy − rent)'}</h2>
         <Plot
           data={[
             {
@@ -221,8 +245,8 @@ function MonteCarloResults({
           ]}
           layout={{
             margin: { l: 70, r: 20, t: 10, b: 50 },
-            xaxis: { title: 'Difference at horizon (€)', tickformat: ',.0f' },
-            yaxis: { title: 'Runs' },
+            xaxis: { title: de ? 'Differenz am Horizont (€)' : 'Difference at horizon (€)', tickformat: ',.0f' },
+            yaxis: { title: de ? 'Läufe' : 'Runs' },
             bargap: 0.05,
           }}
         />
@@ -241,6 +265,8 @@ function FanChart({
   deflate: (v: number, i: number) => number;
   realTerms: boolean;
 }): JSX.Element {
+  const lang = useLang();
+  const de = lang === 'de';
   const years = mc.years;
   const def = (arr: number[]) => arr.map(deflate);
 
@@ -274,20 +300,20 @@ function FanChart({
       height={460}
       data={[
         // buy bands
-        bandStart(mc.buyBands.p10, 'buy 10–90', 'rgba(26,127,75,0.15)'),
-        bandFill(mc.buyBands.p90, mc.buyBands.p10, 'buy 10–90', 'rgba(26,127,75,0.15)'),
-        bandFill(mc.buyBands.p75, mc.buyBands.p25, 'buy 25–75', 'rgba(26,127,75,0.3)'),
-        bandFill(mc.buyBands.p50, mc.buyBands.p25, 'buy median', 'rgba(26,127,75,0.3)'),
+        bandStart(mc.buyBands.p10, de ? 'kaufen 10–90' : 'buy 10–90', 'rgba(26,127,75,0.15)'),
+        bandFill(mc.buyBands.p90, mc.buyBands.p10, de ? 'kaufen 10–90' : 'buy 10–90', 'rgba(26,127,75,0.15)'),
+        bandFill(mc.buyBands.p75, mc.buyBands.p25, de ? 'kaufen 25–75' : 'buy 25–75', 'rgba(26,127,75,0.3)'),
+        bandFill(mc.buyBands.p50, mc.buyBands.p25, de ? 'kaufen median' : 'buy median', 'rgba(26,127,75,0.3)'),
         // rent bands
-        bandStart(mc.rentBands.p10, 'rent 10–90', 'rgba(192,86,33,0.12)'),
-        bandFill(mc.rentBands.p90, mc.rentBands.p10, 'rent 10–90', 'rgba(192,86,33,0.12)'),
-        bandFill(mc.rentBands.p75, mc.rentBands.p25, 'rent 25–75', 'rgba(192,86,33,0.25)'),
-        bandFill(mc.rentBands.p50, mc.rentBands.p25, 'rent median', 'rgba(192,86,33,0.25)'),
+        bandStart(mc.rentBands.p10, de ? 'mieten 10–90' : 'rent 10–90', 'rgba(192,86,33,0.12)'),
+        bandFill(mc.rentBands.p90, mc.rentBands.p10, de ? 'mieten 10–90' : 'rent 10–90', 'rgba(192,86,33,0.12)'),
+        bandFill(mc.rentBands.p75, mc.rentBands.p25, de ? 'mieten 25–75' : 'rent 25–75', 'rgba(192,86,33,0.25)'),
+        bandFill(mc.rentBands.p50, mc.rentBands.p25, de ? 'mieten median' : 'rent median', 'rgba(192,86,33,0.25)'),
         // medians on top
         {
           x: years,
           y: def(mc.buyBands.p50),
-          name: 'Buy (median)',
+          name: de ? 'Kaufen (Median)' : 'Buy (median)',
           type: 'scatter',
           mode: 'lines',
           line: { color: COLORS.buy, width: 2 },
@@ -295,7 +321,7 @@ function FanChart({
         {
           x: years,
           y: def(mc.rentBands.p50),
-          name: 'Rent (median)',
+          name: de ? 'Mieten (Median)' : 'Rent (median)',
           type: 'scatter',
           mode: 'lines',
           line: { color: COLORS.rent, width: 2 },
@@ -303,8 +329,8 @@ function FanChart({
       ]}
       layout={{
         margin: { l: 70, r: 20, t: 10, b: 50 },
-        xaxis: { title: 'Year' },
-        yaxis: { title: `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
+        xaxis: { title: de ? 'Jahr' : 'Year' },
+        yaxis: { title: de ? `Nettovermögen (€${realTerms ? ', heutige Kaufkraft' : ''})` : `Net worth (€${realTerms ? ", today's purchasing power" : ''})`, tickformat: ',.0f' },
         legend: { orientation: 'h' },
         hovermode: 'x',
       }}
@@ -322,6 +348,8 @@ const AMORT_COLORS = {
  *  plus the full yearly table (payments, interest, regular amortization,
  *  Sondertilgung, remaining balance). Rows stop when the loan is repaid. */
 function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: ScenarioResult }): JSX.Element {
+  const lang = useLang();
+  const de = lang === 'de';
   const rows = React.useMemo(() => {
     const active = amort.filter((r) => r.payment > 0.005 || r.balanceEnd > 0.005);
     return active.length > 0 ? active : amort;
@@ -330,14 +358,18 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
   const exportAmortCsv = () =>
     downloadCsv(
       'amortization.csv',
-      ['Year', 'Annual payment EUR', 'Monthly rate EUR', 'Interest EUR', 'Amortization EUR', 'Sondertilgung EUR', 'Balance year-end EUR'],
+      de
+        ? ['Jahr', 'Jahreszahlung EUR', 'Monatsrate EUR', 'Zins EUR', 'Tilgung EUR', 'Sondertilgung EUR', 'Restschuld Jahresende EUR']
+        : ['Year', 'Annual payment EUR', 'Monthly rate EUR', 'Interest EUR', 'Amortization EUR', 'Sondertilgung EUR', 'Balance year-end EUR'],
       rows.map((r) => [r.year, r.payment.toFixed(2), (r.payment / 12).toFixed(2), r.interest.toFixed(2), r.principal.toFixed(2), r.sondertilgung.toFixed(2), r.balanceEnd.toFixed(2)]),
     );
 
   const exportAllCsv = () =>
     downloadCsv(
       'buy-vs-rent-yearly.csv',
-      ['Year', 'Net worth buy EUR', 'Net worth rent EUR', 'Property value EUR', 'Loan balance EUR', 'Buy cumulative cost EUR', 'Rent cumulative cost EUR'],
+      de
+        ? ['Jahr', 'Nettovermögen Kaufen EUR', 'Nettovermögen Mieten EUR', 'Immobilienwert EUR', 'Darlehensrest EUR', 'Kumulierte Kosten Kaufen EUR', 'Kumulierte Kosten Mieten EUR']
+        : ['Year', 'Net worth buy EUR', 'Net worth rent EUR', 'Property value EUR', 'Loan balance EUR', 'Buy cumulative cost EUR', 'Rent cumulative cost EUR'],
       nominal.years.map((y, i) => [
         y,
         nominal.nwBuy[i].toFixed(2),
@@ -355,30 +387,30 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
   return (
     <section className="card">
       <div className="card-head">
-        <h2>Amortization — interest vs principal</h2>
+        <h2>{de ? 'Tilgungsplan — Zins vs. Tilgung' : 'Amortization — interest vs principal'}</h2>
         <div className="csv-actions">
-          <button onClick={exportAmortCsv}>⬇ CSV: amortization</button>
-          <button onClick={exportAllCsv}>⬇ CSV: all yearly data</button>
+          <button onClick={exportAmortCsv}>{de ? '⬇ CSV: Tilgungsplan' : '⬇ CSV: amortization'}</button>
+          <button onClick={exportAllCsv}>{de ? '⬇ CSV: alle Jahresdaten' : '⬇ CSV: all yearly data'}</button>
         </div>
       </div>
       <p className="muted">
-        Share of each year's mortgage payment that goes to interest vs. amortization
-        (regular annuity repayment and Sondertilgung). Early on the payment is mostly
-        interest; the share shifts towards principal over time.
+        {de
+          ? 'Anteil der Jahreszahlung, der auf Zinsen vs. Tilgung entfällt (reguläre Annuitätentilgung und Sondertilgung). Anfangs ist die Zahlung überwiegend Zins; der Anteil verschiebt sich mit der Zeit zur Tilgung.'
+          : "Share of each year's mortgage payment that goes to interest vs. amortization (regular annuity repayment and Sondertilgung). Early on the payment is mostly interest; the share shifts towards principal over time."}
       </p>
       <Plot
         data={[
           {
             x,
             y: rows.map((r) => pct(r.interest, r.payment)),
-            name: 'Interest',
+            name: de ? 'Zins' : 'Interest',
             type: 'bar',
             marker: { color: AMORT_COLORS.interest },
           },
           {
             x,
             y: rows.map((r) => pct(r.principal, r.payment)),
-            name: 'Amortization (annuity)',
+            name: de ? 'Tilgung (Annuität)' : 'Amortization (annuity)',
             type: 'bar',
             marker: { color: AMORT_COLORS.principal },
           },
@@ -394,32 +426,32 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
           barmode: 'stack',
           bargap: 0.2,
           margin: { l: 60, r: 20, t: 10, b: 50 },
-          xaxis: { title: 'Year' },
-          yaxis: { title: '% of yearly payment', range: [0, 100], ticksuffix: '%' },
+          xaxis: { title: de ? 'Jahr' : 'Year' },
+          yaxis: { title: de ? '% der Jahreszahlung' : '% of yearly payment', range: [0, 100], ticksuffix: '%' },
           legend: { orientation: 'h' },
           hovermode: 'x',
         }}
       />
       <details className="amort-details">
-        <summary>📅 Show monthly rates & yearly detail table ({rows.length} rows)</summary>
+        <summary>{de ? `📅 Monatsraten & Jahrestabelle zeigen (${rows.length} Zeilen)` : `📅 Show monthly rates & yearly detail table (${rows.length} rows)`}</summary>
         <div className="amort-table-wrap">
           <table className="amort-table">
             <thead>
               <tr>
-                <th>Year</th>
-                <th title="Monthly mortgage rate ≈ annual payment / 12">Monthly rate</th>
-                <th>Payment</th>
-                <th>Interest</th>
-                <th>Amortization</th>
+                <th>{de ? 'Jahr' : 'Year'}</th>
+                <th title={de ? 'Monatsrate ≈ Jahreszahlung / 12' : 'Monthly mortgage rate ≈ annual payment / 12'}>{de ? 'Monatsrate' : 'Monthly rate'}</th>
+                <th>{de ? 'Zahlung' : 'Payment'}</th>
+                <th>{de ? 'Zins' : 'Interest'}</th>
+                <th>{de ? 'Tilgung' : 'Amortization'}</th>
                 <th>Sondertilgung</th>
-                <th>Balance (end of year)</th>
+                <th>{de ? 'Restschuld (Jahresende)' : 'Balance (end of year)'}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.year}>
                   <td>{r.year}</td>
-                  <td>{r.payment > 0.005 ? `${fmtEur(r.payment / 12)}/mo` : '—'}</td>
+                  <td>{r.payment > 0.005 ? `${fmtEur(r.payment / 12)}${de ? '/Mon.' : '/mo'}` : '—'}</td>
                   <td>{fmtEur(r.payment)}</td>
                   <td className="amort-neg">{fmtEur(r.interest)}</td>
                   <td className="amort-pos">{fmtEur(r.principal)}</td>
