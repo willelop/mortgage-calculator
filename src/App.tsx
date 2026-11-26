@@ -131,9 +131,11 @@ export default function App(): JSX.Element {
   const sonderWarning = useMemo(() => {
     const loan = loanAmountFor(state);
     if (loan <= 0) return null;
-    const cap = 0.05 * loan;
+    if (!switchOn(state, 'sondertilgung_cap_pct')) return null; // cap check switched off
+    const capPct = num(state, 'sondertilgung_cap_pct');
+    const cap = (capPct / 100) * loan;
     const extra = (loan * num(state, 'sondertilgung_pct')) / 100 + num(state, 'sondertilgung_eur');
-    return extra > cap * 1.005 ? { extra, cap } : null;
+    return extra > cap * 1.005 ? { extra, cap, capPct } : null;
   }, [state]);
 
   // payment-mode guard: desired payment must exceed the initial interest
@@ -319,7 +321,7 @@ export default function App(): JSX.Element {
       {sonderWarning && (
         <div className="warning">
           ⚠️ <strong>{de ? 'Sondertilgung über der üblichen Konditionsobergrenze.' : 'Sondertilgung above the usual contract cap.'}</strong>{' '}
-          {de ? 'Du setzt' : 'You set'} {fmtEur(sonderWarning.extra)}/{de ? 'Jahr' : 'year'}, {de ? 'aber die meisten Verträge erlauben höchstens 5 % des ursprünglichen Darlehens ≈' : 'but most contracts allow at most 5 % of the original loan ≈'} {fmtEur(sonderWarning.cap)}/{de ? 'Jahr' : 'year'}.{' '}
+          {de ? 'Du setzt' : 'You set'} {fmtEur(sonderWarning.extra)}/{de ? 'Jahr' : 'year'}, {de ? `aber deine Sondertilgungs-Klausel erlaubt höchstens ${sonderWarning.capPct} % des ursprünglichen Darlehens ≈` : `but your Sondertilgung clause allows at most ${sonderWarning.capPct} % of the original loan ≈`} {fmtEur(sonderWarning.cap)}/{de ? 'Jahr' : 'year'}.{' '}
           {de ? 'Werte über der Grenze werden Banken kaum genehmigen.' : 'Runs above the cap are unlikely to be granted.'}
         </div>
       )}

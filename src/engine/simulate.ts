@@ -199,6 +199,7 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
   // cumulative index factors (correct compounding across shocked years)
   let costIdx = 1;
   let rentIdx = 1;
+  let hausgeldIdx = 1; // cumulative Hausgeld index (mode-dependent)
 
   // --- Monthly loop --------------------------------------------------------
   for (let m = 0; m < months; m++) {
@@ -236,10 +237,13 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
 
       const rentColdY = num(state, 'rent_cold') * rentIdx;
       const nebenkostenY = num(state, 'nebenkosten_monthly') * costIdx;
+      const hgMode = Math.round(num(state, 'hausgeld_indexation'));
+      if (hgMode === 0) hausgeldIdx = costIdx;             // tracks inflation (incl. shocks)
+      else if (hgMode === 2) hausgeldIdx *= 1 + num(state, 'hausgeld_index_rate') / 100;
       const recurringMonthly =
         (num(state, 'grundsteuer_annual') * costIdx +
           num(state, 'building_insurance_annual') * costIdx +
-          num(state, 'hausgeld_annual') * costIdx +
+          num(state, 'hausgeld_annual') * (hgMode === 1 ? 1 : hausgeldIdx) +
           (num(state, 'maintenance_rate') / 100) * price * costIdx) / 12;
       const kaution = 3 * rentColdY;
 

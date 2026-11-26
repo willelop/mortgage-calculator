@@ -80,6 +80,14 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Hausgeld / WEG',
     help: 'EUR/Jahr bei einer Eigentumswohnung; standardmäßig aus (Haus angenommen). Hier aktivieren und Betrag eintragen.',
   },
+  hausgeld_indexation: {
+    label: 'Hausgeld-Anpassung',
+    help: 'Wie sich das Hausgeld über die Jahre entwickelt: mit der Inflation (Standard — Verwaltungen passen es meist regelmäßig an), vollständig fix oder mit einer eigenen jährlichen Rate.',
+  },
+  hausgeld_index_rate: {
+    label: 'Hausgeld-Anpassungsrate',
+    help: 'Jährliche Erhöhung des Hausgelds in % (nur im Modus „Eigene Rate“).',
+  },
   // mortgage
   equity: {
     label: 'Eigenkapital',
@@ -120,6 +128,10 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
   sondertilgung_eur: {
     label: 'Sondertilgung — fester Betrag / Jahr',
     help: 'Zusätzliche Tilgung in EUR pro Jahr. Standard 0 = keine Sondertilgung; in Optionen aktivieren.',
+  },
+  sondertilgung_cap_pct: {
+    label: 'Sondertilgung — vertragliche Obergrenze (für Warnung)',
+    help: 'Die meisten Sondertilgungsklauseln erlauben höchstens 5 % des ursprünglichen Darlehens pro Jahr — dein Vertrag kann abweichen. Die Warnung über der Aktionsleiste erscheint, wenn deine Sondertilgung diesen Anteil übersteigt; hier den Vertragswert eintragen.',
   },
   ltv_rate_surcharge: {
     label: 'Zinsaufschlag (Beleihungsauslauf)',
@@ -228,6 +240,9 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
 const SELECT_OPTION_DE: Record<string, string> = {
   'tilgung_mode:0': 'Anfangstilgung (% p. a.)',
   'tilgung_mode:1': 'Monatsrate (€/Monat)',
+  'hausgeld_indexation:0': 'Folgt der Inflation',
+  'hausgeld_indexation:1': 'Fix (keine Anpassung)',
+  'hausgeld_indexation:2': 'Eigene Rate',
 };
 
 export function groupLabelDe(g: string): string | undefined {

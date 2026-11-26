@@ -33,7 +33,8 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
   Defaults to the browser language on first visit, persisted in localStorage.
 - **Parameter model** built around the German market (defaults for a 500 k€ house):
   Grunderwerbsteuer by Bundesland, Notar/Grundbuch/Makler costs, Wohngebäudeversicherung,
-  Grundsteuer, maintenance reserve, Hausgeld/WEG.
+  Grundsteuer, maintenance reserve, Hausgeld/WEG (with indexation options:
+  inflation-linked, fixed, or custom rate).
 - **Mortgage modelling** in German terms: Zinsbindung (fixed period), Anfangstilgung
   (initial amortization) with German-style annuity, follow-up re-fixing over the
   remaining term, Sondertilgung (extra repayments). The repayment can be defined
@@ -49,8 +50,8 @@ builds, tests and deploys to Pages (enable *Settings → Pages → GitHub Action
   selling costs applied on resale if sold at the horizon.
 - **Realistic bank pricing**: optional loan-to-value (Beleihungsauslauf) rate surcharge
   (+0.25 pp above 60 % LTV, +0.6 pp above 80 %), Restschuld stat at the end of the
-  Zinsbindung, and a warning when the Sondertilgung exceeds the typical 5 %/year
-  contract cap.
+  Zinsbindung, and a warning when the Sondertilgung exceeds the contract cap (editable
+  parameter, default 5 %/year).
 - **Lumpy maintenance**: optional one-off maintenance event (roof, heating…) in a
   chosen year, on top of the yearly % reserve.
 - **Monte Carlo in a Web Worker**: the UI stays responsive, live progress and cancel.

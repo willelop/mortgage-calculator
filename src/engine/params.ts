@@ -107,6 +107,8 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'maintenance_lump_year', label: 'Lump-sum maintenance — year', group: 'purchase', kind: 'count', default: 25, min: 1, max: 50, step: 1, toggleable: false, visibleWhen: (v) => (v['maintenance_lump_amount'] ?? 0) > 0, help: 'Year in which the one-off maintenance event below is charged (e.g. new roof ~year 25, heating ~year 20). Only shown when the lump-sum event is enabled.' },
   { key: 'maintenance_lump_amount', label: 'Lump-sum maintenance event', group: 'purchase', kind: 'eur', default: 0, min: 0, max: 200_000, step: 5000, mcable: true, defaultOn: false, help: 'One-off spend in the year above (roof, heating, façade…). Paid from the buyer portfolio; on top of the yearly % reserve.' },
   { key: 'hausgeld_annual', label: 'Hausgeld / WEG (condo fees)', group: 'purchase', kind: 'eur', default: 0, min: 0, max: 24_000, step: 100, mcable: true, defaultOn: false, help: 'EUR/year if buying a condo; off by default (a house is assumed). Enable here and enter the amount.' },
+  { key: 'hausgeld_indexation', label: 'Hausgeld indexation', group: 'purchase', kind: 'select', default: 0, options: [ { value: 0, label: 'Tracks inflation' }, { value: 1, label: 'Fixed (no indexation)' }, { value: 2, label: 'Custom rate' } ], toggleable: false, visibleWhen: (v) => (v['hausgeld_annual'] ?? 0) > 0, help: 'How the Hausgeld develops over the years: with inflation (default — property managers usually raise it periodically), fully fixed, or at a custom annual rate. Only shown when the Hausgeld is enabled.' },
+  { key: 'hausgeld_index_rate', label: 'Hausgeld indexation rate', group: 'purchase', kind: 'pct', default: 2.0, min: 0, max: 15, step: 0.1, toggleable: false, visibleWhen: (v) => Math.round(v['hausgeld_indexation'] ?? 0) === 2 && (v['hausgeld_annual'] ?? 0) > 0, help: 'Annual increase of the Hausgeld in % (only used in custom-rate mode).' },
 
   // ---------- Mortgage ----------
   { key: 'equity', label: 'Equity / down payment available', group: 'mortgage', kind: 'eur', default: 150_000, min: 0, max: 5_000_000, step: 5000, toggleable: false, help: 'All liquid capital committed to the purchase (covers costs + part of price). Unused remainder stays invested.' },
@@ -119,6 +121,7 @@ export const PARAM_DEFS: ParamDef[] = [
   { key: 'loan_term_years', label: 'Full loan term', group: 'mortgage', kind: 'count', default: 30, min: 5, max: 40, step: 1, toggleable: false, help: 'Total life of the loan; follow-up payment amortizes over the remaining term.' },
   { key: 'sondertilgung_pct', label: 'Sondertilgung — % of loan / year', group: 'mortgage', kind: 'pct', default: 0, min: 0, max: 10, step: 0.5, mcable: true, help: 'Extra repayment as % of the *original* loan per year. Defaults to 0 = no extra repayments; enable in Features.' },
   { key: 'sondertilgung_eur', label: 'Sondertilgung — fixed amount / year', group: 'mortgage', kind: 'eur', default: 0, min: 0, max: 100_000, step: 1000, mcable: true, help: 'Extra repayment in EUR per year. Defaults to 0 = no extra repayments; enable in Features.' },
+  { key: 'sondertilgung_cap_pct', label: 'Sondertilgung contract cap (for warning)', group: 'mortgage', kind: 'pct', default: 5, min: 0, max: 100, step: 0.5, toggleable: false, help: 'Most Sondertilgung clauses cap extra repayments at 5 % of the original loan per year — your contract may differ. The warning above the runs bar fires when your Sondertilgung exceeds this share; enter your contract value here.' },
   { key: 'ltv_rate_surcharge', label: 'LTV rate surcharge (Beleihungsauslauf)', group: 'mortgage', kind: 'switch', default: 1, toggleable: false, help: 'Bank pricing typically penalizes high loan-to-value: +0.25 % points above 60 % LTV, +0.6 % points above 80 % — applied to both fixed and follow-up rate. Switch on for realistic pricing when your equity is thin.' },
 
   // ---------- Rent ----------
@@ -177,6 +180,8 @@ export const ICON: Record<string, string> = {
   maintenance_lump_year: '📅',
   maintenance_lump_amount: '🧱',
   hausgeld_annual: '🏢',
+  hausgeld_indexation: '🏢',
+  hausgeld_index_rate: '📈',
   // mortgage
   equity: '💰',
   fixed_rate: '💹',
@@ -188,6 +193,7 @@ export const ICON: Record<string, string> = {
   loan_term_years: '🗓️',
   sondertilgung_pct: '➕',
   sondertilgung_eur: '💶',
+  sondertilgung_cap_pct: '📋',
   ltv_rate_surcharge: '🏦',
   vol_property: '〰️',
   // rent
