@@ -101,6 +101,14 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Disagio (vorausbezahlt)',
     help: 'Einmalige Gebühr an die Bank für einen niedrigeren Zins, % des Nennbetrags des Darlehens (0 = keins). Die Bank zahlt nur (1 − Disagio) des Darlehens aus; die Differenz wird mitfinanziert. Der effektive Zinssatz (in den Ergebnissen) liegt über dem Nominalzins. Faustregel: 1 % Disagio ≈ 0,15–0,25 pp niedrigerer Nominalzins — prüfen, ob sich das lohnt.',
   },
+  energy_class: {
+    label: 'Energieeffizienzklasse (Energieausweis)',
+    help: 'Aus dem Energieausweis. Steuert den Pflegezuschlag unten (ältere Heizung/Fassade = höherer Unterhalt) und sollte das Sanierungsbudget lenken.',
+  },
+  energy_upkeep: {
+    label: 'Instandhaltungszuschlag nach Energieklasse',
+    help: 'Erhöht die Instandhaltungsrücklage klassenabhängig: A/B +0 pp, C +0,1, D +0,2, E +0,3, F +0,4, G +0,5, H +0,6 pp des Kaufpreises pro Jahr — schlechte Klassen kosten spürbar mehr.',
+  },
   draw_months: {
     label: 'Auszahlungsphase (sukzessive, Monate)',
     help: 'Gestaffelte Auszahlung bei Neubau (nur Annuität): die Hälfte des Darlehens bei Notar, die andere Hälfte nach dieser Anzahl von Monaten. 0 = sofort komplett. In der Auszahlungsphase wird nicht getilgt und der noch nicht ausgezahlte Teil kostet Bereitstellungszinsen (siehe unten).',

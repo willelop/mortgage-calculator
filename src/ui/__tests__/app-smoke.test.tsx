@@ -99,13 +99,17 @@ describe('repayment mode UI', () => {
     const { container } = render(<App />);
     // default mode: Anfangstilgung visible…
     expect(screen.getAllByText(/Initial amortization \(Anfangstilgung\)/).length).toBeGreaterThan(0);
-    // …the mode select is the only param-kind select (MC dist selects hidden by default)
-    const modeSelect = container.querySelector('.param-input select') as HTMLSelectElement;
-    expect(modeSelect.value).toBe('0');
-    fireEvent.change(modeSelect, { target: { value: '1' } });
+    // …find the repayment-mode select among all param selects (energy class etc. exist too)
+    const allSelects = Array.from(container.querySelectorAll('.param-input select')) as HTMLSelectElement[];
+    const isModeSelect = (sel: HTMLSelectElement) =>
+      Array.from(sel.options).some((o) => /Monthly payment/.test(o.textContent ?? ''));
+    const modeSelect = allSelects.find(isModeSelect);
+    expect(modeSelect).toBeTruthy();
+    expect(modeSelect!.value).toBe('0');
+    fireEvent.change(modeSelect!, { target: { value: '1' } });
     expect(screen.getAllByText(/Desired monthly payment/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Initial amortization \(Anfangstilgung\)/)).toBeNull();
-    expect((container.querySelector('.param-input select') as HTMLSelectElement).value).toBe('1');
+    expect((allSelects.find(isModeSelect) as HTMLSelectElement).value).toBe('1');
   });
 });
 

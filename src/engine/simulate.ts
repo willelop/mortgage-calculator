@@ -79,6 +79,9 @@ export interface ScenarioResult {
   liquidationTaxRent: number;
 }
 
+// Energy-class maintenance surcharge (roadmap 2e): pp of price per year, classes A..H
+const ENERGY_SURCHARGE_PP = [0, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+
 /** One-off purchase transaction costs (Grunderwerbsteuer, Notar, Grundbuch, Makler, renovation). */
 export function transactionCostsFor(state: ParamState): number {
   const price = num(state, 'property_price');
@@ -277,11 +280,15 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
       const hgMode = Math.round(num(state, 'hausgeld_indexation'));
       if (hgMode === 0) hausgeldIdx = costIdx;             // tracks inflation (incl. shocks)
       else if (hgMode === 2) hausgeldIdx *= 1 + num(state, 'hausgeld_index_rate') / 100;
+      // Energy-class maintenance surcharge (roadmap 2e): A/B 0 → H +0.6 pp of price
+      const energySurchargePct =
+        sw('energy_upkeep') ? (ENERGY_SURCHARGE_PP[Math.round(v('energy_class'))] ?? 0) : 0;
       const recurringMonthly =
         (num(state, 'grundsteuer_annual') * costIdx +
           num(state, 'building_insurance_annual') * costIdx +
           num(state, 'hausgeld_annual') * (hgMode === 1 ? 1 : hausgeldIdx) +
-          (num(state, 'maintenance_rate') / 100) * price * costIdx) / 12;
+          (num(state, 'maintenance_rate') / 100) * price * costIdx +
+          (energySurchargePct / 100) * price * costIdx) / 12;
       const kaution = 3 * rentColdY;
 
       // Kaution top-up: when rent grows, the deposit must be topped up to

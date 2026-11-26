@@ -77,6 +77,27 @@ describe('runScenario — smoke & invariants', () => {
     expect(noD.effectiveFixedRatePct).toBeCloseTo(noD.nominalFixedRatePct, 9);
   });
 
+  it('energy class drives the maintenance surcharge (roadmap 2e)', () => {
+    const mk = (cls: number, upkeep: number) => {
+      const s = defaultState();
+      s.values.energy_class = cls;
+      s.values.energy_upkeep = upkeep;
+      return runScenario(s);
+    };
+    const a = mk(0, 1);   // A: +0 pp
+    const h = mk(7, 1);   // H: +0.6 pp of 500 000 = 3 000 €/yr
+    const d = mk(3, 1);   // D: +0.2 pp = 1 000 €/yr
+    // over 25 years cumulative buy cost differs by roughly the surcharge × years (indexed)
+    expect(h.buyCumCost[h.buyCumCost.length - 1])
+      .toBeGreaterThan(a.buyCumCost[a.buyCumCost.length - 1] + 25 * 2900);
+    expect(d.buyCumCost[d.buyCumCost.length - 1])
+      .toBeGreaterThan(a.buyCumCost[a.buyCumCost.length - 1] + 25 * 900);
+    // switch off → no surcharge even for class H
+    const hOff = mk(7, 0);
+    expect(hOff.buyCumCost[hOff.buyCumCost.length - 1])
+      .toBeCloseTo(a.buyCumCost[a.buyCumCost.length - 1], 0);
+  });
+
   it('kaution is included in the rent branch at t=0', () => {
     const s = defaultState();
     const res = runScenario(s);

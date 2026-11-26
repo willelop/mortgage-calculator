@@ -170,6 +170,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   suite 92/92.)
 - **2e. Energy classes** (was 15): efficiency-class select (A–H) driving
   different maintenance-reserve and retrofit defaults (class G vs. A/B).
+  (Done 2025-08: `energy_class` select A–H (default D, icon ⚡, EN labels +
+  `labelDe`, DE help) and `energy_upkeep` switch (default on). When on, the
+  maintenance reserve gains a class-dependent surcharge of 0–0.6 pp of the
+  purchase price per year (A/B 0 → H 0.6); renovation-budget help now names
+  typical retrofit budgets for F/G/H. Test asserts exact cost deltas and
+  switch-off equivalence; the app-smoke test no longer assumes
+  `tilgung_mode` is the only select. Suite 93/93.)
 - **2f. Couple mode** (was 13) — last, only behind an explicit toggle:
   second Sparerpauschbetrag (2 000 € instead of 1 000 €), optional second
   equity pool. The single-income/pool assumption is intentional; do not
