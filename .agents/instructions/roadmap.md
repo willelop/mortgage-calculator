@@ -206,6 +206,15 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
 - **3b. Share-link compression** (was 20): in `src/engine/state-io.ts`, when
   `toShareUrl` exceeds ~1500 chars, deflate-raw + base64 via
   `CompressionStream` with a plain fallback; round-trip unit test for both
+  paths.
+  (Done 2025-08: `encodeStateAsync`/`toShareUrlAsync` compress codes > 1500
+  chars via CompressionStream('deflate-raw') + base64url with the `z.`
+  prefix ('.' never occurs in plain codes); graceful plain fallback when
+  streams are unavailable; `decodeStateAsync` handles both, `decodeState`
+  stays sync for plain codes. The share button and the URL restore (an
+  async effect for compressed links, sync path untouched) use the async
+  variants; old plain links keep loading. 4 round-trip tests incl. the
+  "default state is already long" reality; suite 98/98 + e2e.)
   paths; old plain links must still load (versioned prefix or try/catch).
 - **3c. Chart a11y** (new, small): Plotly figures get a `title`/`aria-label`
   and the `Plot` wrapper a `role="img"` + short description from the card

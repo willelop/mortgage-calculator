@@ -11,10 +11,85 @@ export function encodeState(s: ParamState): string {
   return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export function decodeState(code: string): ParamState | null {
+// --- share-link compression (roadmap 3b) ------------------------------------
+// Long states exceed URL length limits (~2000 chars for some browsers/messengers)
+// and look hostile. When the plain code gets too long, deflate-raw + base64url it
+// and prefix it — plain codes never contain '.', so the prefix is unambiguous.
+
+const COMPRESS_THRESHOLD = 1500;
+const COMPRESSED_PREFIX = 'z.';
+
+function bytesToBase64url(bytes: Uint8Array): string {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64urlToBytes(code: string): Uint8Array {
+  const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/** ReadableStream over raw bytes (avoids Blob, whose .stream() jsdom lacks). */
+function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
+}
+
+/** Compressed share code, or null when the platform lacks CompressionStream. */
+async function deflateToCode(json: string): Promise<string | null> {
   try {
-    const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(b64);
+    if (typeof CompressionStream === 'undefined') return null;
+    const bytes = new TextEncoder().encode(json);
+    // cast: the DOM lib types the transform streams as BufferSource-based
+    const transform = new CompressionStream('deflate-raw') as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+    const stream = streamOf(bytes).pipeThrough(transform);
+    const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+    return COMPRESSED_PREFIX + bytesToBase64url(buf);
+  } catch {
+    return null;
+  }
+}
+
+async function inflateFromCode(code: string): Promise<string | null> {
+  try {
+    if (typeof DecompressionStream === 'undefined') return null;
+    const bytes = base64urlToBytes(code.slice(COMPRESSED_PREFIX.length));
+    const transform = new DecompressionStream('deflate-raw') as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+    const stream = streamOf(bytes).pipeThrough(transform);
+    return await new Response(stream).text();
+  } catch {
+    return null;
+  }
+}
+
+/** Share code: plain base64url when short, deflate-compressed when long. */
+export async function encodeStateAsync(s: ParamState): Promise<string> {
+  const plain = encodeState(s);
+  if (plain.length <= COMPRESS_THRESHOLD) return plain;
+  const compressed = await deflateToCode(JSON.stringify({ v: s.values, o: s.on, m: s.mc }));
+  return compressed ?? plain;
+}
+
+/** Decode either a plain or a compressed share code (async variant). */
+export async function decodeStateAsync(code: string): Promise<ParamState | null> {
+  if (code.startsWith(COMPRESSED_PREFIX)) {
+    const json = await inflateFromCode(code);
+    return json ? stateFromPayloadJson(json) : null;
+  }
+  return decodeState(code);
+}
+
+/** Apply a raw JSON payload onto defaultState, defensively. */
+function stateFromPayloadJson(json: string): ParamState | null {
+  try {
     const payload = JSON.parse(json) as { v?: Record<string, number>; o?: Record<string, boolean>; m?: ParamState['mc'] };
     const base = defaultState();
     // only accept known params, coerce types defensively
@@ -41,15 +116,38 @@ export function decodeState(code: string): ParamState | null {
   }
 }
 
+export function decodeState(code: string): ParamState | null {
+  try {
+    const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(b64);
+    return stateFromPayloadJson(json);
+  } catch {
+    return null;
+  }
+}
+
 export function toShareUrl(s: ParamState): string {
   const url = new URL(window.location.href);
   url.searchParams.set('s', encodeState(s));
   return url.toString();
 }
 
+/** Share URL with compression for long states (use this one in the UI). */
+export async function toShareUrlAsync(s: ParamState): Promise<string> {
+  const url = new URL(window.location.href);
+  url.searchParams.set('s', await encodeStateAsync(s));
+  return url.toString();
+}
+
 export function fromLocation(): ParamState | null {
   const s = new URLSearchParams(window.location.search).get('s');
   return s ? decodeState(s) : null;
+}
+
+/** Location state incl. compressed codes (async; use when the sync read returns null). */
+export async function fromLocationAsync(): Promise<ParamState | null> {
+  const s = new URLSearchParams(window.location.search).get('s');
+  return s ? decodeStateAsync(s) : null;
 }
 
 // --- localStorage -----------------------------------------------------------

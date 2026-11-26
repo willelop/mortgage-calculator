@@ -14,7 +14,7 @@ import { initialTheme, applyTheme, Theme } from './theme';
 import { fmtEur } from './format';
 import { useLang, setLang } from './i18n';
 import {
-  applyPreset, PRESETS, fromLocation, toShareUrl, presetName, presetDescription,
+  applyPreset, PRESETS, fromLocation, fromLocationAsync, toShareUrlAsync, presetName, presetDescription,
   localStorageNames, localStorageSave, localStorageLoad, localStorageDelete,
   autosaveState, loadAutosave,
 } from './engine/state-io';
@@ -65,6 +65,22 @@ export default function App(): JSX.Element {
     autosaveTimer.current = window.setTimeout(() => autosaveState(state), 250);
     return () => window.clearTimeout(autosaveTimer.current);
   }, [state]);
+
+  // compressed share link (roadmap 3b): the sync decode can't inflate it, so
+  // re-check asynchronously once mounted and apply the state if it decodes
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get('s')) return;
+    if (fromLocation()) return; // plain link already applied synchronously
+    let alive = true;
+    fromLocationAsync().then((s) => {
+      if (alive && s) {
+        restoredRef.current = true;
+        setState(s);
+      }
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // restore notice — only on first mount after loading from the autosave slot
   const [mountedOnce, setMountedOnce] = useState(false);
@@ -202,7 +218,7 @@ export default function App(): JSX.Element {
   );
 
   const share = useCallback(async () => {
-    const url = toShareUrl(state);
+    const url = await toShareUrlAsync(state);
     try {
       await navigator.clipboard.writeText(url);
       showToast(de ? 'Link in die Zwischenablage kopiert.' : 'Link copied to clipboard.');
