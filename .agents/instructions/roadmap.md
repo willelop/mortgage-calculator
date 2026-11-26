@@ -232,6 +232,13 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   print layout — headline numbers, decision-relevant deltas, top-3
   sensitivities — as a hidden-on-screen section rendered only under
   `@media print`. The print CSS base already exists.
+  (Done 2025-08: `src/ui/PrintOnePager.tsx` — print-only section prepended
+  to the printed page: date/assumptions line, key-number table (terminal
+  net worths, difference, break-even, monthly payment, total interest,
+  transaction costs, Restschuld) and the top-3 sensitivity levers. Styled
+  title is a `<p>` (no second `<h1>`); screen tests use `getAllByText`
+  where the print block repeats a label (jsdom loads no CSS). Suite 98/98
+  + e2e.)
 - **4b. Unit-aware steppers/sliders** (was 23): value+slider pairs for the
   headline inputs (price, equity, rate, fixed period) in Global/Purchase;
   Mantine `Slider` + `NumberInput` linked both ways; keyboard reachable;

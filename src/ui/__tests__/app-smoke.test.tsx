@@ -57,7 +57,9 @@ describe('App smoke', () => {
     // the useEffect filled in the nominal scenario → key numbers visible
     expect(screen.getAllByText(/Buy − rent/i).length).toBeGreaterThan(0);
     // amortization card exists (loan > 0 in defaults)
-    expect(screen.getByText(/Restschuld after fixed period/)).toBeTruthy();
+    // print one-pager repeats this label — the print section is display:none on
+    // screen but jsdom doesn't load CSS, so match all occurrences
+    expect(screen.getAllByText(/Restschuld after fixed period/).length).toBeGreaterThan(0);
     // no error boundary / blank output
     expect(container.textContent!.length).toBeGreaterThan(500);
   });

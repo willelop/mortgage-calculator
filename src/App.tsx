@@ -7,6 +7,7 @@ import { ltvSurchargePct } from './engine/mortgage';
 import { runMonteCarlo, McResult } from './engine/monte-carlo';
 import { sensitivityAnalysis, SensitivityResult } from './engine/sensitivity';
 import { ParamForm } from './ui/ParamForm';
+import { PrintOnePager } from './ui/PrintOnePager';
 import { OptionsMenu } from './ui/OptionsMenu';
 import { Results } from './ui/Results';
 import { Logo } from './ui/Logo';
@@ -405,6 +406,7 @@ export default function App(): JSX.Element {
       </div>
 
       <main className={`grid ${mainTab === 'inputs' ? 'inputs-only' : 'results-only'}`}>
+        {nominal && <PrintOnePager nominal={nominal} sens={sens} inflationPct={num(state, 'inflation')} />}
         <div className="col-params" hidden={mainTab !== 'inputs'}>
           <ParamForm state={state} onChange={setState} />
         </div>
