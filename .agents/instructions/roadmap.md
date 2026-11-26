@@ -219,6 +219,10 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
 - **3c. Chart a11y** (new, small): Plotly figures get a `title`/`aria-label`
   and the `Plot` wrapper a `role="img"` + short description from the card
   heading; export/download buttons stay keyboard reachable.
+  (Done 2025-08: `Plot` takes `ariaLabel`/`ariaDescription` — renders
+  `role="img"` with the label, description as a visually-hidden paragraph
+  linked via `aria-describedby`; all six charts in Results pass DE/EN
+  labels + one-sentence descriptions. Suite 98/98.)
 
 ---
 

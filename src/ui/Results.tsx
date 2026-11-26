@@ -93,6 +93,10 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
           )}
         </div>
         <Plot
+          ariaLabel={de ? 'Liniendiagramm: Nettovermögen Kaufen vs. Mieten' : 'Line chart: net worth, buy vs. rent'}
+          ariaDescription={de
+            ? `Vergleich der Nettovermögen über ${H} Jahre; Enddifferenz ${fmtSignedEur(nominal.terminalDiff)}.`
+            : `Net worth comparison over ${H} years; terminal difference ${fmtSignedEur(nominal.terminalDiff)}.`}
           data={[
             {
               x: nominal.years,
@@ -124,6 +128,10 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
       <section className="card">
         <h2>{de ? 'Kumulierte Kosten des Wohnens' : 'Cumulative cost of staying'}</h2>
         <Plot
+          ariaLabel={de ? 'Liniendiagramm: kumulierte Kosten des Wohnens' : 'Line chart: cumulative cost of staying'}
+          ariaDescription={de
+            ? 'Kumulierte Ausgaben für Kaufen und Mieten über die Jahre — die Kurven laufen auseinander, je höher die laufenden Kosten sind.'
+            : 'Cumulative spending for buying and renting over the years — the curves diverge with running costs.'}
           data={[
             {
               x: nominal.years,
@@ -165,6 +173,10 @@ export function Results({ nominal, mc, sens, inflationPct }: Props): JSX.Element
             {fmtSignedEur(sens.baseDiff)}.
           </p>
           <Plot
+            ariaLabel={de ? 'Balkendiagramm: Sensitivität' : 'Bar chart: sensitivity'}
+            ariaDescription={de
+              ? 'Balken zeigen, wie stark sich das Kaufen−Mieten-Ergebnis ändert, wenn jeder Parameter zwischen Minimum und Maximum variiert.'
+              : 'Bars show how much the buy−rent outcome shifts as each parameter varies between its minimum and maximum.'}
             height={Math.max(240, Math.min(sens.rows.length, 14) * 34)}
             data={[
               {
@@ -241,6 +253,10 @@ function MonteCarloResults({
       <section className="card">
         <h2>{de ? 'Endvermögensdifferenz (Kaufen − Mieten)' : 'Terminal wealth difference (buy − rent)'}</h2>
         <Plot
+          ariaLabel={de ? 'Histogramm: Endvermögensdifferenz' : 'Histogram: terminal wealth difference'}
+          ariaDescription={de
+            ? 'Verteilung der simulierten Enddifferenzen; Balken rechts von null bedeuten Kaufen gewinnt.'
+            : 'Distribution of simulated terminal differences; bars right of zero mean buying wins.'}
           data={[
             {
               x: mc.terminalDiff.map((v) => deflate(v, H)),
@@ -303,6 +319,10 @@ function FanChart({
 
   return (
     <Plot
+      ariaLabel={de ? 'Bänderdiagramm: Monte-Carlo-Nettovermögen' : 'Band chart: Monte Carlo net worth'}
+      ariaDescription={de
+        ? '10–90- und 25–75-Perzentilbänder für Kaufen und Mieten über die Jahre.'
+        : '10–90 and 25–75 percentile bands for buying and renting over the years.'}
       height={340}
       data={[
         // buy bands
@@ -405,6 +425,10 @@ function AmortizationSection({ amort, nominal }: { amort: AmortYear[]; nominal: 
           : "Share of each year's mortgage payment that goes to interest vs. amortization (regular annuity repayment and Sondertilgung). Early on the payment is mostly interest; the share shifts towards principal over time."}
       </p>
       <Plot
+        ariaLabel={de ? 'Balkendiagramm: Tilgungsplan' : 'Bar chart: amortization'}
+        ariaDescription={de
+          ? 'Jährliche Rate aufgeteilt in Zins- und Tilgungsanteil — der Tilgungsanteil wächst mit sinkender Restschuld.'
+          : 'Yearly payment split into interest and principal — the principal share grows as the balance shrinks.'}
         data={[
           {
             x,
