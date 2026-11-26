@@ -61,4 +61,20 @@ test.describe('mobile layout', () => {
     expect(m.position).toBe('fixed');
     expect(Math.abs(m.bottom - m.viewport)).toBeLessThan(2);
   });
+
+  test('charts fit the viewport width after a run', async ({ page }) => {
+    await page.goto('/');
+    // deterministic run → auto-switch to Results → lazy Plotly chunk draws
+    await page.locator('.runs-bar button').first().click();
+    await page.waitForSelector('.results');
+    await page.waitForTimeout(1500);
+    const m = await page.evaluate(() => ({
+      scrollW: document.documentElement.scrollWidth,
+      innerW: window.innerWidth,
+      plotW: document.querySelector('.results .js-plotly-plot')?.getBoundingClientRect().width ?? null,
+    }));
+    // regression guard: charts drawn while hidden used Plotly's 700px default
+    expect(m.scrollW, 'page must not scroll horizontally').toBeLessThanOrEqual(m.innerW + 1);
+    if (m.plotW !== null) expect(m.plotW, 'chart must fit the viewport').toBeLessThanOrEqual(m.innerW + 1);
+  });
 });

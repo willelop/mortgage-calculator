@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { chartColors } from '../theme';
 
 interface PlotProps {
@@ -21,9 +21,10 @@ type PlotlyModule = {
 /** Thin wrapper around plotly.js-dist-min, dynamically imported to keep the bundle small.
  *  Layout is theme-aware: paper/plot backgrounds are transparent and font/grid colors
  *  come from the active CSS variables, so charts follow the light/dark toggle.
- *  Sizing is container-driven: a ResizeObserver re-fits the chart whenever its box
- *  changes (tab switch from hidden → visible, phone rotation, compare column), so no
- *  synthetic window-resize events are needed anywhere else in the app. */
+ *  Sizing is container-driven and deferred: a chart is only drawn when its container
+ *  actually has width (drawing while display:none makes Plotly fall back to its 700px
+ *  default — which overflows phone screens), and a ResizeObserver re-draws whenever the
+ *  container appears or changes size (tab switch, rotation, compare column). */
 export function Plot({ data, layout, height = 380, ariaLabel, ariaDescription }: PlotProps): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<PlotlyModule | null>(null);
@@ -44,10 +45,9 @@ export function Plot({ data, layout, height = 380, ariaLabel, ariaDescription }:
 
   const effectiveHeight = compact ? Math.min(height, 300) : height;
 
-  useEffect(() => {
-    let alive = true;
+  const render = useCallback((plotly: PlotlyModule) => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || el.clientWidth <= 0) return; // hidden — the ResizeObserver re-calls us when visible
     const c = chartColors();
     const base = {
       paper_bgcolor: 'rgba(0,0,0,0)',
@@ -62,37 +62,35 @@ export function Plot({ data, layout, height = 380, ariaLabel, ariaDescription }:
     themed.yaxis = { ...base.yaxis, ...(layout.yaxis as Record<string, unknown> | undefined) };
     // phones: tighter margins regardless of the chart's desktop margin
     if (compact) themed.margin = { l: 46, r: 12, t: 10, b: 38 };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    plotly.react(el, data as any[], themed as any, { responsive: true, displayModeBar: false });
+  }, [data, layout, key, compact]);
+
+  // load the (cached) module once, then render
+  useEffect(() => {
+    let alive = true;
     import('plotly.js-dist-min').then(({ default: Plotly }) => {
       plotlyRef.current = Plotly;
-      if (!alive || !ref.current) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Plotly.react(ref.current, data as any[], themed as any, { responsive: true, displayModeBar: false });
+      if (alive) render(Plotly);
     });
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, compact]);
+  }, [render]);
 
-  // re-fit whenever the container's size changes (hidden → visible tab, rotation,
-  // compare column appearing) — the event-based hack in App.tsx could not cover these
+  // re-draw whenever the container appears or its size changes
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    let lastW = -1;
     const ro = new ResizeObserver(() => {
-      const w = el.clientWidth;
-      if (w > 0 && w !== lastW && plotlyRef.current) {
-        lastW = w;
-        plotlyRef.current.Plots.resize(el);
-      }
+      if (plotlyRef.current) render(plotlyRef.current);
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [render]);
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', maxWidth: '100%' }}>
       <div
         ref={ref}
         style={{ height: effectiveHeight }}
