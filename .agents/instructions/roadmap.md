@@ -70,10 +70,13 @@ being asked for / cheapest-first)**
     "Reset parameters & reload" (clears the `buyvsrent.*` localStorage
     entries when the persisted state itself is the trigger); bilingual via
     browser language, with a boundary unit test.)
-18. Engine invariant tests (property-style): money conservation (rent branch
-    cash + invested == buy branch cash + property + invested up to the flows
-    under test), loan fully amortizes by term end whenever amortization > 0,
-    no negative reserves. These catch whole classes that example tests miss.
+18. (Done 2026-11: src/engine/__tests__/invariants.test.ts — property-style
+    checks across a grid of mutated states: series shape, loan fully amortizes
+    by term end whenever tilgung > 0, principal conservation
+    (loan0 − balance_end == Σ principal), payment == interest + principal,
+    balance monotone non-increasing, break-even/terminalDiff consistency,
+    kaution == 3× cold rent, no negative series, more equity → smaller loan,
+    and the freed-cash flow invariant.)
 19. (Done 2026-11: `deploy.yml` — tests run in their own `test` job and
     build/deploy depend on it, so a red test can never reach Pages;
     `concurrency` cancel-in-progress and npm caching were already in place.)
