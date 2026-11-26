@@ -385,16 +385,31 @@ html[data-theme='dark'] .param-box:has(.mc-toggle input:checked) .mc-toggle { co
 
 /* --- Mantine form tabs: quiet underline ----------------------------------------------------- */
 
+.param-tabs { margin-bottom: 4px; }
+
+/* one swipeable line at every width — labels are long, the form column is narrow */
+.param-tabs .mantine-Tabs-list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border) !important;
+}
+.param-tabs .mantine-Tabs-list::-webkit-scrollbar { display: none; }
+
 .param-tabs .mantine-Tabs-tab {
   font-size: 0.84rem;
   font-weight: 500;
   color: var(--muted);
-  padding-inline: 12px;
+  padding: 8px 12px;
+  white-space: nowrap;
 }
-.param-tabs .mantine-Tabs-tab .count { opacity: 0.6; font-weight: 400; font-size: 0.76rem; }
+.param-tabs .mantine-Tabs-tab .count { opacity: 0.55; font-weight: 400; font-size: 0.74rem; margin-left: 4px; }
 .param-tabs .mantine-Tabs-tab:hover { color: var(--text); background: transparent; }
-.param-tabs .mantine-Tabs-tab[data-active] { border-color: var(--accent) !important; color: var(--text) !important; font-weight: 600; }
-.param-tabs .mantine-Tabs-list { border-bottom: 1px solid var(--border) !important; }
+.param-tabs .mantine-Tabs-tab[data-active] {
+  border-bottom-color: var(--accent) !important;
+  color: var(--text) !important;
+  font-weight: 600;
+}
 
 .tab-hint { margin: 0 0 12px; }
 
@@ -771,14 +786,8 @@ footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
   .param-input input[type='number'] { width: 110px; }
   .param-mc input[type='number'] { width: 90px; }
 
-  /* swipe the 8 tabs horizontally instead of wrapping into rows */
-  .param-tabs .mantine-Tabs-list {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .param-tabs .mantine-Tabs-list::-webkit-scrollbar { display: none; }
-  .param-tabs .mantine-Tabs-tab { font-size: 0.82rem; padding-inline: 10px; white-space: nowrap; }
+  /* tabs scroll in one line at all widths (see .param-tabs); phone just tightens them */
+  .param-tabs .mantine-Tabs-tab { font-size: 0.8rem; padding: 7px 9px; }
 
   .keynumbers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat .stat-value { font-size: 1.1rem; }
