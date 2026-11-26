@@ -101,6 +101,14 @@ const DE_LABELS: Record<string, { label?: string; help?: string }> = {
     label: 'Disagio (vorausbezahlt)',
     help: 'Einmalige Gebühr an die Bank für einen niedrigeren Zins, % des Nennbetrags des Darlehens (0 = keins). Die Bank zahlt nur (1 − Disagio) des Darlehens aus; die Differenz wird mitfinanziert. Der effektive Zinssatz (in den Ergebnissen) liegt über dem Nominalzins. Faustregel: 1 % Disagio ≈ 0,15–0,25 pp niedrigerer Nominalzins — prüfen, ob sich das lohnt.',
   },
+  draw_months: {
+    label: 'Auszahlungsphase (sukzessive, Monate)',
+    help: 'Gestaffelte Auszahlung bei Neubau (nur Annuität): die Hälfte des Darlehens bei Notar, die andere Hälfte nach dieser Anzahl von Monaten. 0 = sofort komplett. In der Auszahlungsphase wird nicht getilgt und der noch nicht ausgezahlte Teil kostet Bereitstellungszinsen (siehe unten).',
+  },
+  bereitstellung_pct: {
+    label: 'Bereitstellungszinsen',
+    help: 'Jahreszins, den die Bank auf den noch nicht ausgezahlten Darlehensanteil während der Auszahlungsphase berechnet (üblich 2–3 %, oft die ersten 3 Monate frei — nicht modelliert). Monatlich zusätzlich zur Rate fällig.',
+  },
   fixed_years: {
     label: 'Zinsbindung',
     help: 'Jahre, für die der Zins garantiert ist.',

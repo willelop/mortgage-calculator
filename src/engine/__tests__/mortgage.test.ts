@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mortgageSchedule, germanAnnuityPayment, yearlyAmortization } from '../mortgage';
+import { mortgageSchedule, germanAnnuityPayment, yearlyAmortization, annuityPayment } from '../mortgage';
 
 describe('mortgageSchedule — hand-computed reference (100 k€, 3.6 %, 2 % Tilgung)', () => {
   // Payment = 100000 * (0.036/12) + 100000 * 0.02/12 = 300 + 166.67 = 466.67 €/month
@@ -186,5 +186,64 @@ describe('yearlyAmortization', () => {
     expect(totalInterest).toBeCloseTo(res.totalInterest, 4);
     // Loan is repaid at the end of the term
     expect(rows[29].balanceEnd).toBeCloseTo(0, 2);
+  });
+});
+
+describe('mortgageSchedule — staged draw / Bereitstellungszinsen (roadmap 2d)', () => {
+  const base = {
+    loan: 100_000,
+    fixedRatePct: 3.6,
+    fixedYears: 10,
+    followupRatePct: 3.6,
+    tilgungPct: 2,
+    termYears: 30,
+    sondertilgungPct: 0,
+    sondertilgungEur: 0,
+    months: 360,
+  };
+
+  it('draw phase: half the loan accrues interest, undrawn half costs commitment interest', () => {
+    const res = mortgageSchedule({ ...base, drawMonths: 12, commitmentRatePct: 3 });
+    // balance stays at the drawn half during the draw phase
+    expect(res.balance[0]).toBeCloseTo(50_000, 4);
+    expect(res.balance[11]).toBeCloseTo(50_000, 4);
+    // second half arrives at month 12
+    expect(res.balance[12]).toBeCloseTo(100_000, 4);
+    // monthly draw-phase payment = interest on drawn half + commitment on undrawn half
+    const intM = 50_000 * 0.036 / 12;               // 150
+    const commM = 50_000 * 0.03 / 12;               // 125
+    expect(res.payment[0]).toBeCloseTo(intM + commM, 4);
+    expect(res.interest[0]).toBeCloseTo(intM, 4);
+    expect(res.commitment[0]).toBeCloseTo(commM, 4);
+    expect(res.principal[0]).toBe(0);               // no amortization during the draw
+    // totals: 12 draw-phase months
+    expect(res.totalCommitment).toBeCloseTo(12 * commM, 4);
+    // after the draw, a normal annuity over the remaining 29 years
+    expect(res.payment[13]).toBeCloseTo(annuityPayment(100_000, 0.036 / 12, 348), 4);
+    // the loan still amortizes fully over the term
+    expect(res.balance[360]).toBeLessThan(1);
+  });
+
+  it('draw phase raises total cost vs drawing at once', () => {
+    const once = mortgageSchedule(base);
+    const staged = mortgageSchedule({ ...base, drawMonths: 12, commitmentRatePct: 3 });
+    // interest itself is lower during the draw (smaller balance), but the
+    // commitment cost plus the slower post-draw amortization dominate
+    const onceCost = once.totalInterest;
+    const stagedCost = staged.totalInterest + staged.totalCommitment;
+    expect(stagedCost).toBeGreaterThan(onceCost);
+  });
+
+  it('commitment rate 0 = no commitment interest, plain interest-only draw phase', () => {
+    const res = mortgageSchedule({ ...base, drawMonths: 12, commitmentRatePct: 0 });
+    expect(res.commitment[0]).toBe(0);
+    expect(res.totalCommitment).toBe(0);
+    expect(res.payment[0]).toBeCloseTo(50_000 * 0.036 / 12, 4);
+  });
+
+  it('staged draw is ignored for non-annuity shapes (documented behaviour)', () => {
+    const lin = mortgageSchedule({ ...base, shape: 'linear', drawMonths: 12, commitmentRatePct: 3 });
+    expect(lin.balance[0]).toBeCloseTo(100_000, 4);
+    expect(lin.totalCommitment).toBe(0);
   });
 });

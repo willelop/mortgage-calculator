@@ -20,7 +20,11 @@ export interface MortgageResult {
   payment: number[];
   /** Sondertilgung (extra repayment) per month; a slice of `principal` */
   sonder: number[];
+  /** commitment interest (Bereitstellungszinsen) per month during the draw phase */
+  commitment: number[];
   totalInterest: number;
+  /** total commitment interest paid during the draw phase */
+  totalCommitment: number;
   /** months (0-based) in which scheduled payments occurred */
   paidUntil: number;
 }
@@ -42,6 +46,10 @@ export interface MortgageInput {
   shape?: TilgungShape;
   /** for shape 'grace': interest-only years at the start */
   graceYears?: number;
+  /** staged disbursement: months until the second half of the loan is drawn (0 = drawn at once, annuity shape only) */
+  drawMonths?: number;
+  /** Bereitstellungszinsen — commitment interest, annual % on the undrawn share */
+  commitmentRatePct?: number;
 }
 
 export function mortgageSchedule(input: MortgageInput): MortgageResult {
@@ -51,13 +59,20 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
   } = input;
   const shape: TilgungShape = input.shape ?? 'annuity';
   const graceMonths = shape === 'grace' ? Math.max(0, Math.round((input.graceYears ?? 0) * 12)) : 0;
+  // Two-phase draw (Bereitstellungszinsen): half of the loan is drawn at t0, the
+  // other half after `drawMonths`. During the draw phase only the drawn half
+  // accrues interest; the undrawn share costs commitment interest instead.
+  const drawMonths = shape === 'annuity' ? Math.max(0, Math.round(input.drawMonths ?? 0)) : 0;
+  const commitR = (input.commitmentRatePct ?? 0) / 100 / 12;
+  const drawn0 = drawMonths > 0 ? loan / 2 : loan;
 
   const balance: number[] = new Array(months + 1);
   const interest: number[] = new Array(months);
   const principal: number[] = new Array(months);
   const payment: number[] = new Array(months);
   const sonder: number[] = new Array(months).fill(0);
-  balance[0] = Math.max(0, loan);
+  const commitment: number[] = new Array(months).fill(0);
+  balance[0] = Math.max(0, drawn0);
 
   const rFixed = fixedRatePct / 100 / 12;
   const r2 = followupRatePct / 100 / 12;
@@ -75,9 +90,12 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
     : 0;
 
   let totalInterest = 0;
+  let totalCommitment = 0;
   let paidUntil = -1;
 
   for (let m = 0; m < months; m++) {
+    // staged draw: the second half of the loan arrives at month `drawMonths`
+    if (m === drawMonths && drawMonths > 0) balance[m] = Math.max(balance[m], loan);
     const b = balance[m];
     if (b <= 0.005) {
       balance[m + 1] = 0;
@@ -89,6 +107,25 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
     paidUntil = m;
 
     const r = m < fixedMonths ? rFixed : r2;
+
+    // Draw phase: interest only on the drawn half, commitment interest on the
+    // undrawn share; no amortization while the loan is not fully disbursed.
+    if (m < drawMonths) {
+      const int = b * rFixed;
+      const comm = (loan - b) * commitR;
+      interest[m] = int;
+      commitment[m] = comm;
+      principal[m] = 0;
+      payment[m] = int + comm;
+      balance[m + 1] = b;
+      totalInterest += int;
+      totalCommitment += comm;
+      continue;
+    }
+    // After the second half is drawn, re-anchor the annuity over the remaining term.
+    if (m === drawMonths && drawMonths > 0) {
+      pay = annuityPayment(b, rFixed, Math.max(1, termYears * 12 - m));
+    }
 
     // Phase transitions: end of fixed-rate period, and (grace shape) end of the
     // interest-only years. Both re-anchor the payment as an annuity over the
@@ -128,7 +165,7 @@ export function mortgageSchedule(input: MortgageInput): MortgageResult {
     }
   }
 
-  return { balance, interest, principal, payment, sonder, totalInterest, paidUntil };
+  return { balance, interest, principal, payment, sonder, commitment, totalInterest, totalCommitment, paidUntil };
 }
 
 export function annuityPayment(B: number, rm: number, n: number): number {

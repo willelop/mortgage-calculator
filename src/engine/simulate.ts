@@ -150,6 +150,8 @@ export function runScenario(state: ParamState, shocks?: YearlyShocks): ScenarioR
     months,
     shape,
     graceYears: Math.round(v('grace_years') ?? 5),
+    drawMonths: Math.round(v('draw_months') ?? 0),
+    commitmentRatePct: v('bereitstellung_pct'),
   });
 
   const fixedMonths = Math.max(0, Math.round(v('fixed_years')) * 12);

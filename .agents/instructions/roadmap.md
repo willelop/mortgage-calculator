@@ -159,6 +159,15 @@ Each sub-item: parameter first (`src/engine/params.ts` + `params-de.ts`, per
   undrawn share (default 3 % p.a.), only when the loan is disbursed in
   stages (a new boolean + draw schedule may be needed — keep it a simple
   two-phase draw if the full schedule is out of proportion).
+  (Done 2025-08: simple two-phase draw as recommended — `draw_months`
+  (default 0) + `bereitstellung_pct` (default 3 %, visible only when the
+  draw period > 0). Half the loan drawn at t0, the rest after
+  `draw_months`; during the draw phase interest accrues only on the drawn
+  half, the undrawn share costs commitment interest monthly, no
+  amortization; at full draw the annuity re-anchors over the remaining
+  term. Only implemented for the annuity shape (documented);
+  `MortgageResult` gained `commitment[]`/`totalCommitment`. 4 tests;
+  suite 92/92.)
 - **2e. Energy classes** (was 15): efficiency-class select (A–H) driving
   different maintenance-reserve and retrofit defaults (class G vs. A/B).
 - **2f. Couple mode** (was 13) — last, only behind an explicit toggle:
